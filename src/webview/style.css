@@ -1,0 +1,90 @@
+/* Every colour comes from VS Code. It injects all ~900 registered workbench colours as
+   --vscode-* custom properties, already resolved with the user's customizations applied,
+   and re-pushes them on every theme change. Hardcoding a hex here would break that. */
+
+:root {
+  --gap: 12px;
+  --radius: 6px;
+}
+
+body {
+  margin: 0;
+  padding: 16px;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.3em;
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--vscode-descriptionForeground);
+}
+
+.warn {
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  margin: var(--gap) 0;
+}
+
+.swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius);
+  border: 1px solid var(--vscode-widget-border, transparent);
+}
+
+code {
+  font-family: var(--vscode-editor-font-family);
+}
+
+.probe {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 8px;
+  margin: var(--gap) 0;
+}
+
+.probe div {
+  padding: 10px;
+  border-radius: var(--radius);
+  text-align: center;
+  font-size: 0.85em;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  padding: 6px 14px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+
+button:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}

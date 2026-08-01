@@ -77,6 +77,7 @@ async function run(
   // Global and workspace are tracked separately so the harness can tell the difference
   // between what the user set and what the merged view reports: the distinction bug 1
   // turned on.
+  const registered = []
   const settings = { 'workbench.colorTheme': theme, 'workbench.iconTheme': iconTheme, ...global }
   const ws = { ...workspace }
   const store = new Map()
@@ -105,8 +106,20 @@ async function run(
       showInformationMessage: () => {},
       showErrorMessage: () => {},
       showQuickPick: async () => undefined,
+      registerWebviewPanelSerializer: () => ({ dispose() {} }),
+      createWebviewPanel: () => {
+        throw new Error('the panel should not open during activation')
+      },
     },
-    commands: { registerCommand: () => ({ dispose() {} }), executeCommand: async () => {} },
+    commands: {
+      registerCommand: (id) => {
+        registered.push(id)
+        return { dispose() {} }
+      },
+      executeCommand: async () => {},
+    },
+    Uri: { joinPath: (...parts) => ({ fsPath: parts.join('/') }) },
+    ViewColumn: { Active: -1 },
     ConfigurationTarget: { Global: 1, Workspace: 2 },
   }
 
@@ -117,6 +130,8 @@ async function run(
 
   await ext.activate({
     extensionPath: ROOT,
+    extensionUri: { fsPath: ROOT },
+    extension: { packageJSON: { version: '0.0.0-test' } },
     subscriptions: [],
     globalState: {
       get: (k, d) => (store.has(k) ? store.get(k) : d),
@@ -138,6 +153,7 @@ async function run(
     scopes: Object.keys(scoped),
     tokens: tokens[`[${theme}]`],
     iconTheme: settings['workbench.iconTheme'],
+    commands: registered,
     iconThemeJson: JSON.parse(fs.readFileSync(ICON_THEME, 'utf8')),
     folderSvg: fs.readFileSync(folderIcon(), 'utf8'),
     folderSetDir: path.basename(path.dirname(folderIcon())),
@@ -455,6 +471,37 @@ async function run(
     check('an untouched light install writes nothing', d.scopes, [])
   }
 
+  console.log('\ncustomizer panel')
+  {
+    const r = await run({})
+    checkThat(
+      'registers the open command',
+      r.commands.includes('chromaleon.openCustomizer'),
+      r.commands.join(', '),
+    )
+    // Opening on activation would pop a panel in everyone's face on every window.
+    check('does not open the panel on activation', r.settings.__panelOpened, undefined)
+
+    const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
+    const declared = manifest.contributes.commands.map((c) => c.command)
+    checkThat(
+      'every registered command is declared in the manifest',
+      r.commands.every((c) => declared.includes(c)),
+      r.commands.filter((c) => !declared.includes(c)).join(', '),
+    )
+    checkThat(
+      'every declared command is actually registered',
+      declared.every((c) => r.commands.includes(c)),
+      declared.filter((c) => !r.commands.includes(c)).join(', '),
+    )
+  }
+  {
+    // The panel is served entirely from dist/, which is what localResourceRoots allows.
+    for (const asset of ['webview.js', 'webview.css', 'extension.cjs']) {
+      checkThat(`dist/${asset} is built`, fs.existsSync(path.join(ROOT, 'dist', asset)), 'missing')
+    }
+  }
+
   console.log('\nevery setting is declared in package.json')
   {
     const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
@@ -579,8 +626,11 @@ async function run(
       window: {
         onDidChangeActiveColorTheme: () => ({ dispose() {} }),
         showInformationMessage: () => {},
+        registerWebviewPanelSerializer: () => ({ dispose() {} }),
       },
       commands: { registerCommand: () => ({ dispose() {} }), executeCommand: async () => {} },
+      Uri: { joinPath: (...parts) => ({ fsPath: parts.join('/') }) },
+      ViewColumn: { Active: -1 },
       ConfigurationTarget: { Global: 1 },
     }
     Module._load = (req, par, m) => (req === 'vscode' ? vscodeStub : load(req, par, m))

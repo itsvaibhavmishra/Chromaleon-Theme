@@ -6,6 +6,7 @@ import { applyColors, clearColors } from './colors'
 import { applyIcons, syncIconTheme } from './icons'
 import { applyItalics, clearItalics } from './italics'
 import { registerForSync } from './ledger'
+import { openCustomizer, registerSerializer } from './panel'
 import { NS, readSettings } from './settings'
 
 const RESETTABLE = [
@@ -41,6 +42,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   context.subscriptions.push(
+    registerSerializer(context),
+
+    vscode.commands.registerCommand(`${NS}.openCustomizer`, () => openCustomizer(context)),
+
     vscode.workspace.onDidChangeConfiguration(async (event) => {
       if (event.affectsConfiguration(NS) || event.affectsConfiguration('workbench.colorTheme')) {
         await apply()

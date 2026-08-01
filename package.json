@@ -64,7 +64,7 @@
   "scripts": {
     "build": "tsx src/scripts/build.ts && npm run bundle",
     "build:no-italics": "tsx src/scripts/build.ts --no-italics && npm run bundle",
-    "bundle": "esbuild src/extension/index.ts --bundle --outfile=dist/extension.cjs --format=cjs --platform=node --target=node20 --external:vscode --minify",
+    "bundle": "esbuild src/extension/index.ts --bundle --outfile=dist/extension.cjs --format=cjs --platform=node --target=node20 --external:vscode --minify && esbuild src/webview/index.tsx --bundle --outfile=dist/webview.js --format=iife --platform=browser --target=es2022 --jsx=automatic --jsx-import-source=preact --minify",
     "check": "npm run build && tsx src/scripts/check.ts && tsc --noEmit && npm run lint && npm run format:check && npm test",
     "package": "npm run build && vsce package --no-dependencies",
     "watch": "tsx watch src/scripts/build.ts",
@@ -83,6 +83,7 @@
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "material-icon-theme": "^5.37.0",
+    "preact": "^10.29.7",
     "prettier": "^3.9.6",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
@@ -267,6 +268,12 @@
       }
     },
     "commands": [
+      {
+        "command": "chromaleon.openCustomizer",
+        "title": "Open Customizer",
+        "category": "Chromaleon",
+        "icon": "$(symbol-color)"
+      },
       {
         "command": "chromaleon.selectAccent",
         "title": "Select Accent",
