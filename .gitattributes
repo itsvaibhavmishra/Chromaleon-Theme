@@ -1,0 +1,10 @@
+# Check every text file out with LF on all platforms. Without this, Windows converts to
+# CRLF on checkout and Prettier flags the entire tree, since the generated themes and every
+# source file are written with LF.
+* text=auto eol=lf
+
+# Never let line-ending normalisation touch binaries.
+*.png binary
+*.jpg binary
+*.woff2 binary
+*.vsix binary
