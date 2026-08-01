@@ -11,7 +11,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- 10+ colour theme sets, dark and light, each with a generated high contrast pair.
+- 20+ colour themes, dark and light, each variant generating a high contrast version alongside it.
 - **Chromaleon Icons**, built on [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) (MIT) with 672 file icons, 578 folder icons, 13,017 associations.
 - Fourteen settings covering accent, status bar, selections, cursor, current line, tabs, borders, shadows, italics and folder tinting, plus four commands.
 - Contrast auditing in `npm run check`: body text, syntax hues, accent-on-background and on-accent text all have enforced floors.

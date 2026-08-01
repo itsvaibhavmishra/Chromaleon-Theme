@@ -9,21 +9,21 @@
 
 <br/>
 
-Chromaleon is a set of 10+ theme sets for VS Code, dark and light, each with a high
-contrast pair and a matching file icon theme. Pick a background that suits the room, then
+Chromaleon is 20+ themes for VS Code, dark and light, with a high contrast variant of each
+and a matching file icon theme. Pick a background that suits the room, then
 **shift the accent to any colour you like** and watch the whole interface follow, icons
 included.
 
 ![Version](https://img.shields.io/badge/version-0.1.0-2578B3)
-![Theme sets](https://img.shields.io/badge/theme%20sets-10%2B-8B5CF6)
+![Themes](https://img.shields.io/badge/themes-20%2B-8B5CF6)
 ![Icons](https://img.shields.io/badge/icons-1250-4FA6FF)
 ![VS Code](https://img.shields.io/badge/VS%20Code-%3E%3D1.102-007ACC?logo=visualstudiocode&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-34D399)
 
 ## 🎨 Themes
 
-10+ sets, named after historical pigments and minerals, ordered darkest first so the theme
-picker reads as a gradient. Every one ships a **High Contrast** pair, 22 themes in total.
+Named after historical pigments and minerals, ordered darkest first so the theme picker
+reads as a gradient. Every variant ships a **High Contrast** version alongside it.
 
 | Variant       | Background         | Named after                        |
 | :------------ | :----------------- | :--------------------------------- |
