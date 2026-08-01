@@ -13,12 +13,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/itsvaibhavmishra/Chromaleon.git"
+    "url": "https://github.com/itsvaibhavmishra/Chromaleon-Theme.git"
   },
   "bugs": {
-    "url": "https://github.com/itsvaibhavmishra/Chromaleon/issues"
+    "url": "https://github.com/itsvaibhavmishra/Chromaleon-Theme/issues"
   },
-  "homepage": "https://github.com/itsvaibhavmishra/Chromaleon#readme",
+  "homepage": "https://github.com/itsvaibhavmishra/Chromaleon-Theme#readme",
   "private": true,
   "type": "module",
   "engines": {
