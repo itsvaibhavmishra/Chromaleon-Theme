@@ -21,9 +21,12 @@ const ALLOWED = new Set([
 const BULK = /^(themes|icons)\//
 
 function main() {
+  // shell: true because npx is a .cmd shim on Windows, which execFileSync cannot spawn
+  // directly. The command is fixed and takes no user input, so there is nothing to inject.
   const listed = execFileSync('npx', ['vsce', 'ls', '--no-dependencies'], {
     cwd: ROOT,
     encoding: 'utf8',
+    shell: true,
   })
     .split('\n')
     .map((line) => line.trim())
