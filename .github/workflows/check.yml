@@ -25,7 +25,13 @@ permissions:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    # The extension writes files into its own install directory at runtime, so path handling
+    # has to hold on Windows too. Linux alone would never catch a separator bug.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -42,11 +48,13 @@ jobs:
       # Packaging is part of the contract: .vscodeignore excluding a file the build
       # produced looks fine in the repo and is missing from the vsix.
       - name: Package
+        shell: bash
         run: npx vsce package --no-dependencies --out chromaleon.vsix
 
       # .vscodeignore is an allowlist, so this asserts the result rather than hunting for
       # names: anything that appears here and is not on the list should not have shipped.
       - name: Assert the package contains only what it should
+        shell: bash
         run: |
           UNEXPECTED=$(npx vsce ls --no-dependencies \
             | grep -vE '^(themes|icons)/' \
@@ -59,12 +67,14 @@ jobs:
           echo "package contents are exactly as expected"
 
       - name: Verify the packaged extension
+        shell: bash
         run: |
           mkdir -p .verify
           unzip -q chromaleon.vsix -d .verify
           node test/settings.cjs .verify/extension
 
       - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest'
         with:
           name: chromaleon-vsix
           path: chromaleon.vsix

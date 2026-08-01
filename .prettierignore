@@ -9,3 +9,6 @@ node_modules/
 # package.json's contributes block is rewritten by the build; leave its formatting alone.
 package.json
 package-lock.json
+
+# Local planning notes, not part of the project's formatted surface.
+ideas/
