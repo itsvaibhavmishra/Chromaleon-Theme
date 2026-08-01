@@ -65,14 +65,15 @@
     "build": "tsx src/scripts/build.ts && npm run bundle",
     "build:no-italics": "tsx src/scripts/build.ts --no-italics && npm run bundle",
     "bundle": "esbuild src/extension/index.ts --bundle --outfile=dist/extension.cjs --format=cjs --platform=node --target=node20 --external:vscode --minify && esbuild src/webview/index.tsx --bundle --outfile=dist/webview.js --format=iife --platform=browser --target=es2022 --jsx=automatic --jsx-import-source=preact --minify",
-    "check": "npm run build && tsx src/scripts/check.ts && tsc --noEmit && npm run lint && npm run format:check && npm test",
+    "check": "npm run build && tsx src/scripts/check.ts && tsc --noEmit && npm run lint && npm run format:check && npm test && npm run check:package",
     "package": "npm run build && vsce package --no-dependencies",
     "watch": "tsx watch src/scripts/build.ts",
     "test": "node test/settings.cjs",
     "lock": "tsx src/scripts/lock.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "check:package": "tsx src/scripts/package-contents.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

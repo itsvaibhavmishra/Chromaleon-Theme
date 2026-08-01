@@ -42,6 +42,8 @@ jobs:
 
       - run: npm ci
 
+      # Runs the package-contents assertion too, so a file that leaks into the vsix fails
+      # here and locally in exactly the same way.
       - name: Check
         run: npm run check
 
@@ -50,21 +52,6 @@ jobs:
       - name: Package
         shell: bash
         run: npx vsce package --no-dependencies --out chromaleon.vsix
-
-      # .vscodeignore is an allowlist, so this asserts the result rather than hunting for
-      # names: anything that appears here and is not on the list should not have shipped.
-      - name: Assert the package contains only what it should
-        shell: bash
-        run: |
-          UNEXPECTED=$(npx vsce ls --no-dependencies \
-            | grep -vE '^(themes|icons)/' \
-            | grep -vxE 'package\.json|README\.md|CHANGELOG\.md|LICENSE\.txt|THIRD-PARTY-NOTICES\.md|icon\.png|dist/extension\.cjs' || true)
-          if [ -n "$UNEXPECTED" ]; then
-            echo "::error::Unexpected files in the vsix:"
-            echo "$UNEXPECTED"
-            exit 1
-          fi
-          echo "package contents are exactly as expected"
 
       - name: Verify the packaged extension
         shell: bash
