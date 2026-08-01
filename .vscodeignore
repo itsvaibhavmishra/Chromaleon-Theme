@@ -1,0 +1,16 @@
+# Allowlist, not a denylist. Everything is excluded and the handful of things an installed
+# extension actually needs are added back.
+#
+# A denylist has to name every private file to keep it out, which means it leaks what those
+# files are and silently ships anything new that nobody remembered to add.
+**
+
+!package.json
+!README.md
+!CHANGELOG.md
+!LICENSE.txt
+!THIRD-PARTY-NOTICES.md
+!icon.png
+!dist/**
+!themes/**
+!icons/**

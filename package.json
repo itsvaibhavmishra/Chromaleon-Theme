@@ -1,0 +1,416 @@
+{
+  "name": "chromaleon-theme",
+  "displayName": "Chromaleon Theme",
+  "description": "Eleven themes with matching file icons, a high contrast pair for each, and an accent you can shift to any colour.",
+  "version": "0.1.0",
+  "// publisher": "TODO: replace with a real marketplace publisher id before publishing",
+  "publisher": "itsvaibhavmishra",
+  "license": "MIT",
+  "icon": "icon.png",
+  "author": {
+    "name": "Vaibhaw Mishra",
+    "url": "https://github.com/itsvaibhavmishra"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/itsvaibhavmishra/Chromaleon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/itsvaibhavmishra/Chromaleon/issues"
+  },
+  "homepage": "https://github.com/itsvaibhavmishra/Chromaleon#readme",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "vscode": ">=1.102.0"
+  },
+  "categories": [
+    "Themes"
+  ],
+  "keywords": [
+    "theme",
+    "color-theme",
+    "colour-theme",
+    "icon-theme",
+    "dark",
+    "dark mode",
+    "dark theme",
+    "light",
+    "light theme",
+    "high contrast",
+    "accent",
+    "accent color",
+    "customizable",
+    "icons",
+    "material",
+    "material icons",
+    "syntax highlighting",
+    "vscode theme",
+    "chromaleon"
+  ],
+  "main": "./dist/extension.cjs",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "extensionKind": [
+    "ui",
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
+  "scripts": {
+    "build": "tsx src/scripts/build.ts && npm run bundle",
+    "build:no-italics": "tsx src/scripts/build.ts --no-italics && npm run bundle",
+    "bundle": "esbuild src/extension/index.ts --bundle --outfile=dist/extension.cjs --format=cjs --platform=node --target=node20 --external:vscode --minify",
+    "check": "npm run build && tsx src/scripts/check.ts && tsc --noEmit && npm run lint && npm run format:check && npm test",
+    "package": "npm run build && vsce package --no-dependencies",
+    "watch": "tsx watch src/scripts/build.ts",
+    "test": "node test/settings.cjs",
+    "lock": "tsx src/scripts/lock.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.10.2",
+    "@types/vscode": "1.102",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.28.1",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "material-icon-theme": "^5.37.0",
+    "prettier": "^3.9.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.65.0"
+  },
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "Chromaleon",
+      "properties": {
+        "chromaleon.accent": {
+          "order": 1,
+          "type": "string",
+          "default": "Theme Default",
+          "enum": [
+            "Theme Default",
+            "Chromaleon",
+            "White",
+            "Tomato",
+            "Orange",
+            "Yellow",
+            "Acid Lime",
+            "Lime",
+            "Teal",
+            "Bright Teal",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Pink"
+          ],
+          "markdownDescription": "Accent used across the interface and folder icons. `Theme Default` keeps whichever accent the selected variant ships with.",
+          "scope": "window"
+        },
+        "chromaleon.customAccent": {
+          "order": 2,
+          "type": "string",
+          "default": "",
+          "pattern": "^$|^#([A-Fa-f0-9]{6})$",
+          "patternErrorMessage": "Enter a valid 6-digit hex colour, e.g. #2578b3.",
+          "markdownDescription": "Any `#rrggbb`, which **overrides** `#chromaleon.accent#`. Run *Chromaleon: Clear Custom Accent* or empty this field to go back.",
+          "scope": "window"
+        },
+        "chromaleon.accentedStatusBar": {
+          "order": 3,
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Paint the status bar in the accent colour.",
+          "scope": "window"
+        },
+        "chromaleon.selectionStyle": {
+          "order": 4,
+          "type": "string",
+          "default": "room",
+          "enum": [
+            "room",
+            "accent"
+          ],
+          "enumDescriptions": [
+            "Tint selections with the variant’s own background hue.",
+            "Tint selections with the accent colour."
+          ],
+          "markdownDescription": "What colour selections and match highlights are tinted with.",
+          "scope": "window"
+        },
+        "chromaleon.cursorStyle": {
+          "order": 5,
+          "type": "string",
+          "default": "theme",
+          "enum": [
+            "theme",
+            "accent"
+          ],
+          "enumDescriptions": [
+            "The theme’s own cursor colour, chosen to stay findable.",
+            "The accent colour."
+          ],
+          "markdownDescription": "What colour the cursor is.",
+          "scope": "window"
+        },
+        "chromaleon.italics": {
+          "order": 6,
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Italicise comments, keywords and modules. Turn this off if your editor font has no italic face.",
+          "scope": "window"
+        },
+        "chromaleon.currentLine": {
+          "order": 7,
+          "type": "string",
+          "default": "outline",
+          "enum": [
+            "outline",
+            "solid",
+            "none"
+          ],
+          "enumDescriptions": [
+            "Outline the current line.",
+            "Fill the current line.",
+            "No current-line highlight."
+          ],
+          "markdownDescription": "How the line the cursor is on is highlighted.",
+          "scope": "window"
+        },
+        "chromaleon.tabIndicator": {
+          "order": 8,
+          "type": "string",
+          "default": "bottom",
+          "enum": [
+            "bottom",
+            "top",
+            "none"
+          ],
+          "enumDescriptions": [
+            "Along the bottom edge of the active tab.",
+            "Along the top edge of the active tab.",
+            "No indicator."
+          ],
+          "markdownDescription": "Where the active tab indicator sits.",
+          "scope": "window"
+        },
+        "chromaleon.tabBar": {
+          "order": 9,
+          "type": "string",
+          "default": "flat",
+          "enum": [
+            "flat",
+            "contrasted"
+          ],
+          "enumDescriptions": [
+            "The tab bar matches the editor background.",
+            "A darker tab bar, so tabs stand out."
+          ],
+          "markdownDescription": "How the tab bar sits against the editor.",
+          "scope": "window"
+        },
+        "chromaleon.borders": {
+          "order": 10,
+          "type": "string",
+          "default": "none",
+          "enum": [
+            "none",
+            "subtle",
+            "strong"
+          ],
+          "enumDescriptions": [
+            "No borders between editor areas.",
+            "Faint separators.",
+            "Clearly visible separators."
+          ],
+          "markdownDescription": "Borders drawn between editor areas.",
+          "scope": "window"
+        },
+        "chromaleon.shadows": {
+          "order": 11,
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Draw shadows under widgets and overlays. Turn off for a completely flat interface.",
+          "scope": "window"
+        },
+        "chromaleon.accentFolders": {
+          "order": 12,
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Tint folder icons with the accent instead of using Material’s own per-folder colours.",
+          "scope": "window"
+        },
+        "chromaleon.hideExplorerArrows": {
+          "order": 13,
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Hide the chevrons beside folders in the file explorer.",
+          "scope": "window"
+        },
+        "chromaleon.syncIconTheme": {
+          "order": 14,
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Switch to Chromaleon Icons automatically when a Chromaleon colour theme is selected.",
+          "scope": "window"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "chromaleon.selectAccent",
+        "title": "Select Accent",
+        "category": "Chromaleon"
+      },
+      {
+        "command": "chromaleon.clearCustomAccent",
+        "title": "Clear Custom Accent",
+        "category": "Chromaleon"
+      },
+      {
+        "command": "chromaleon.openSettings",
+        "title": "Open Settings",
+        "category": "Chromaleon"
+      },
+      {
+        "command": "chromaleon.reset",
+        "title": "Reset All Settings",
+        "category": "Chromaleon"
+      }
+    ],
+    "themes": [
+      {
+        "label": "Chromaleon Obsidian",
+        "path": "./themes/Chromaleon-Obsidian.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Obsidian High Contrast",
+        "path": "./themes/Chromaleon-Obsidian-High-Contrast.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Tyrian",
+        "path": "./themes/Chromaleon-Tyrian.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Tyrian High Contrast",
+        "path": "./themes/Chromaleon-Tyrian-High-Contrast.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Ochre",
+        "path": "./themes/Chromaleon-Ochre.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Ochre High Contrast",
+        "path": "./themes/Chromaleon-Ochre-High-Contrast.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Malachite",
+        "path": "./themes/Chromaleon-Malachite.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Malachite High Contrast",
+        "path": "./themes/Chromaleon-Malachite-High-Contrast.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Woad",
+        "path": "./themes/Chromaleon-Woad.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Woad High Contrast",
+        "path": "./themes/Chromaleon-Woad-High-Contrast.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Bole",
+        "path": "./themes/Chromaleon-Bole.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Bole High Contrast",
+        "path": "./themes/Chromaleon-Bole-High-Contrast.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Basalt",
+        "path": "./themes/Chromaleon-Basalt.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Basalt High Contrast",
+        "path": "./themes/Chromaleon-Basalt-High-Contrast.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Davy",
+        "path": "./themes/Chromaleon-Davy.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Davy High Contrast",
+        "path": "./themes/Chromaleon-Davy-High-Contrast.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Payne",
+        "path": "./themes/Chromaleon-Payne.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Payne High Contrast",
+        "path": "./themes/Chromaleon-Payne-High-Contrast.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Smalt",
+        "path": "./themes/Chromaleon-Smalt.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Smalt High Contrast",
+        "path": "./themes/Chromaleon-Smalt-High-Contrast.json",
+        "uiTheme": "vs-dark"
+      },
+      {
+        "label": "Chromaleon Chalk",
+        "path": "./themes/Chromaleon-Chalk.json",
+        "uiTheme": "vs"
+      },
+      {
+        "label": "Chromaleon Chalk High Contrast",
+        "path": "./themes/Chromaleon-Chalk-High-Contrast.json",
+        "uiTheme": "vs"
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "chromaleon-icons",
+        "label": "Chromaleon Icons",
+        "path": "./themes/Chromaleon-Icons.json",
+        "_watch": true
+      }
+    ]
+  },
+  "galleryBanner": {
+    "color": "#111113",
+    "theme": "dark"
+  }
+}

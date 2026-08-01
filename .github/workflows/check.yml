@@ -1,0 +1,71 @@
+name: Check
+
+# The gate for every change. Runs the same `npm run check` used locally: theme
+# fingerprint, contrast audits, icon-theme validation, typecheck, lint, format and the
+# settings tests.
+#
+# It deliberately builds from a clean checkout with nothing generated. themes/, icons/,
+# dist/ and src/generated.ts are all gitignored, so this is what proves the repo is
+# self-sufficient — a missing source file would fail here rather than after release.
+
+on:
+  pull_request:
+    branches: [main, staging]
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+
+# One in-flight run per branch: a newer push cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check
+        run: npm run check
+
+      # Packaging is part of the contract: .vscodeignore excluding a file the build
+      # produced looks fine in the repo and is missing from the vsix.
+      - name: Package
+        run: npx vsce package --no-dependencies --out chromaleon.vsix
+
+      # .vscodeignore is an allowlist, so this asserts the result rather than hunting for
+      # names: anything that appears here and is not on the list should not have shipped.
+      - name: Assert the package contains only what it should
+        run: |
+          UNEXPECTED=$(npx vsce ls --no-dependencies \
+            | grep -vE '^(themes|icons)/' \
+            | grep -vxE 'package\.json|README\.md|CHANGELOG\.md|LICENSE\.txt|THIRD-PARTY-NOTICES\.md|icon\.png|dist/extension\.cjs' || true)
+          if [ -n "$UNEXPECTED" ]; then
+            echo "::error::Unexpected files in the vsix:"
+            echo "$UNEXPECTED"
+            exit 1
+          fi
+          echo "package contents are exactly as expected"
+
+      - name: Verify the packaged extension
+        run: |
+          mkdir -p .verify
+          unzip -q chromaleon.vsix -d .verify
+          node test/settings.cjs .verify/extension
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chromaleon-vsix
+          path: chromaleon.vsix
+          retention-days: 14

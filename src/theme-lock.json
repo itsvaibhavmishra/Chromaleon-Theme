@@ -1,0 +1,4 @@
+{
+  "note": "Fingerprint of the generated themes. `npm run check` fails if the build stops matching it. Refactors must not change how a theme looks; when a change to appearance is intended, run `npm run lock` to re-record.",
+  "sha256": "614331e1d3b721f6de0916337cac1a864248002c318d42f029e994048d41d5f3"
+}

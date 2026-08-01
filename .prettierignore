@@ -1,0 +1,11 @@
+# Build output.
+themes/
+icons/
+dist/
+src/generated.ts
+node_modules/
+*.vsix
+
+# package.json's contributes block is rewritten by the build; leave its formatting alone.
+package.json
+package-lock.json
