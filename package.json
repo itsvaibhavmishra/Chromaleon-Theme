@@ -265,6 +265,22 @@
           "default": true,
           "markdownDescription": "Switch to Chromaleon Icons automatically when a Chromaleon colour theme is selected.",
           "scope": "window"
+        },
+        "chromaleon.customizerLocation": {
+          "type": "string",
+          "enum": [
+            "newWindow",
+            "beside",
+            "active"
+          ],
+          "enumDescriptions": [
+            "Open in its own editor window, so the customizer and the editor it is restyling are both fully visible.",
+            "Open beside the active editor.",
+            "Open in the active editor group."
+          ],
+          "default": "newWindow",
+          "markdownDescription": "Where **Open Customizer** puts the panel.",
+          "order": 15
         }
       }
     },

@@ -11,6 +11,7 @@ export type CurrentLine = 'outline' | 'solid' | 'none'
 export type TabIndicator = 'bottom' | 'top' | 'none'
 export type TabBar = 'flat' | 'contrasted'
 export type Borders = 'none' | 'subtle' | 'strong'
+export type CustomizerLocation = 'newWindow' | 'beside' | 'active'
 
 export interface Settings {
   accent: string
@@ -27,6 +28,7 @@ export interface Settings {
   accentFolders: boolean
   hideExplorerArrows: boolean
   syncIconTheme: boolean
+  customizerLocation: CustomizerLocation
 }
 
 // Defaults are duplicated in package.json's configuration block; both are asserted equal by
@@ -48,6 +50,7 @@ export function readSettings(): Settings {
     accentFolders: c.get('accentFolders', false),
     hideExplorerArrows: c.get('hideExplorerArrows', false),
     syncIconTheme: c.get('syncIconTheme', true),
+    customizerLocation: c.get<CustomizerLocation>('customizerLocation', 'newWindow'),
   }
 }
 

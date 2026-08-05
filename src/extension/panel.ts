@@ -3,8 +3,9 @@ import { randomBytes } from 'node:crypto'
 import * as vscode from 'vscode'
 
 import { resolveAccent } from '../core/accents'
+import { CONCEPTS } from '../core/roles'
 import { RUNTIME } from '../generated'
-import type { PanelState, ToHost, ToWebview } from '../webview/protocol'
+import type { PanelState, RoleMeta, ThemeOption, ToHost, ToWebview } from '../webview/protocol'
 import { activeVariant, NS, readSettings } from './settings'
 
 const VIEW_TYPE = 'chromaleon.customizer'
@@ -12,17 +13,34 @@ const VIEW_TYPE = 'chromaleon.customizer'
 // One panel at a time. A second copy would fight the first over the same settings.
 let current: vscode.WebviewPanel | undefined
 
-function panelState(context: vscode.ExtensionContext): PanelState {
+const HIGH_CONTRAST = ' High Contrast'
+
+// The whole catalogue and every palette go over at once. The panel can then show any theme
+// without a round trip, which is what lets someone compare variants inside the customizer
+// without changing the theme they are actually working in.
+function panelState(): PanelState {
   const settings = readSettings()
   const variant = activeVariant()
+  const themes: ThemeOption[] = Object.keys(RUNTIME.variants).map((label) => ({
+    label,
+    highContrast: label.endsWith(HIGH_CONTRAST),
+  }))
+
+  const roles: RoleMeta[] = RUNTIME.roles.map((role) => ({
+    id: role.id,
+    label: role.label,
+    group: role.group,
+    count: role.keys.length + role.scopes.length,
+    floor: role.floor,
+  }))
+
   return {
-    theme: variant?.label ?? null,
-    light: variant?.light ?? false,
-    accent:
-      resolveAccent(settings.accent, settings.customAccent) ??
-      variant?.accent ??
-      RUNTIME.defaultAccent,
-    version: (context.extension.packageJSON as { version: string }).version,
+    roles,
+    concepts: CONCEPTS.map((concept) => ({ ...concept })),
+    themes,
+    palettes: RUNTIME.palettes,
+    active: variant?.label ?? null,
+    accentOverride: resolveAccent(settings.accent, settings.customAccent) ?? null,
   }
 }
 
@@ -59,8 +77,8 @@ function wire(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): voi
   }
   panel.webview.html = html(panel.webview, context)
 
-  const push = (type: ToWebview['type']) => {
-    const message: ToWebview = { type, state: panelState(context) }
+  const push = () => {
+    const message: ToWebview = { type: 'state', state: panelState() }
     void panel.webview.postMessage(message)
   }
 
@@ -68,17 +86,19 @@ function wire(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): voi
   // not stack a second set of listeners on the first.
   const listeners = [
     panel.webview.onDidReceiveMessage((message: ToHost) => {
-      if (message.type === 'ready') push('state')
+      if (message.type === 'ready') push()
       else if (message.type === 'openSettings') {
         void vscode.commands.executeCommand('workbench.action.openSettings', `@ext:${NS}`)
+      } else if (message.type === 'pickTheme') {
+        void vscode.commands.executeCommand('workbench.action.selectTheme')
       }
     }),
-    // The panel paints from --vscode-* variables, so VS Code restyles it on a theme change
-    // by itself. These only refresh the values we render as text.
-    vscode.window.onDidChangeActiveColorTheme(() => push('themeChanged')),
+    // The panel paints its own chrome from --vscode-* variables, so VS Code restyles that
+    // part by itself. This resends the palette the canvas and the role list are drawn from.
+    vscode.window.onDidChangeActiveColorTheme(() => push()),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration(NS) || event.affectsConfiguration('workbench.colorTheme')) {
-        push('themeChanged')
+        push()
       }
     }),
   ]
@@ -90,20 +110,35 @@ function wire(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): voi
 }
 
 /** Opens the customizer, or focuses it when it is already open. */
-export function openCustomizer(context: vscode.ExtensionContext): void {
+export async function openCustomizer(context: vscode.ExtensionContext): Promise<void> {
   if (current) {
     current.reveal(current.viewColumn)
     return
   }
+
+  const location = readSettings().customizerLocation
+  const column = location === 'beside' ? vscode.ViewColumn.Beside : vscode.ViewColumn.Active
+
   wire(
     // wire() sets the webview options, including for panels the serializer restores.
-    vscode.window.createWebviewPanel(VIEW_TYPE, 'Chromaleon', vscode.ViewColumn.Active, {
+    vscode.window.createWebviewPanel(VIEW_TYPE, 'Chromaleon', column, {
       // Keeps scroll position and in-progress edits across tab switches. The panel is
       // small, so the memory this costs is not a concern.
       retainContextWhenHidden: true,
     }),
     context,
   )
+
+  // There is no ViewColumn for a separate window, so the panel is created in this one and
+  // moved. It has focus at this point, which is what the move command acts on. A failure
+  // here is not worth surfacing: the panel is already open, just in the original window.
+  if (location === 'newWindow') {
+    try {
+      await vscode.commands.executeCommand('workbench.action.moveEditorToNewWindow')
+    } catch {
+      // Older builds without auxiliary windows land here.
+    }
+  }
 }
 
 // Without this the panel silently disappears on window reload, since VS Code restores the
