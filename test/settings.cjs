@@ -69,6 +69,55 @@ function checkThat(label, condition, detail) {
   }
 }
 
+// The inert half of the vscode surface: constants, and listeners we register but never fire.
+// Only this is shared. What each test actually asserts on, the config store and whether a
+// panel may open at all, stays written out where it is asserted, because those differ on
+// purpose and hiding the difference behind a flag would hide the point of the test.
+function baseStub() {
+  return {
+    workspace: { onDidChangeConfiguration: () => ({ dispose() {} }) },
+    window: {
+      onDidChangeActiveColorTheme: () => ({ dispose() {} }),
+      showInformationMessage: () => {},
+      showErrorMessage: () => {},
+      showQuickPick: async () => undefined,
+      registerWebviewPanelSerializer: () => ({ dispose() {} }),
+    },
+    Uri: { joinPath: (...parts) => ({ fsPath: parts.join('/') }) },
+    ViewColumn: { Active: -1, Beside: -2 },
+    ConfigurationTarget: { Global: 1, Workspace: 2 },
+  }
+}
+
+// Loads the built bundle against a stub and activates it. Restores the loader in a finally,
+// so one failing activation cannot leave every later test resolving the real `vscode`.
+async function activateWith(stub, context) {
+  const load = Module._load
+  const install = () => {
+    Module._load = (req, parent, isMain) => (req === 'vscode' ? stub : load(req, parent, isMain))
+  }
+
+  install()
+  delete require.cache[BUNDLE]
+  const ext = require(BUNDLE)
+  try {
+    await ext.activate(context)
+  } finally {
+    Module._load = load
+  }
+
+  // deactivate() and command handlers reach for vscode too, so they need the stub back.
+  const withStub = async (fn) => {
+    install()
+    try {
+      return await fn(ext)
+    } finally {
+      Module._load = load
+    }
+  }
+  return { ext, withStub }
+}
+
 /** Runs activate() with the given chromaleon settings and returns the effects. */
 async function run(
   chromaleon,
@@ -82,53 +131,36 @@ async function run(
   const ws = { ...workspace }
   const store = new Map()
 
-  const vscode = {
-    workspace: {
-      getConfiguration: (section) =>
-        section === 'chromaleon'
-          ? {
-              get: (k, d) => (k in chromaleon ? chromaleon[k] : d),
-              update: async (k, v) => void (chromaleon[k] = v),
-            }
-          : {
-              get: (k, d) => (k in ws ? ws[k] : k in settings ? settings[k] : d),
-              inspect: (k) => ({ key: k, globalValue: settings[k], workspaceValue: ws[k] }),
-              update: async (k, v, target) => {
-                const store = target === 2 ? ws : settings
-                if (v === undefined) delete store[k]
-                else store[k] = v
-              },
-            },
-      onDidChangeConfiguration: () => ({ dispose() {} }),
+  const vscode = baseStub()
+  vscode.workspace.getConfiguration = (section) =>
+    section === 'chromaleon'
+      ? {
+          get: (k, d) => (k in chromaleon ? chromaleon[k] : d),
+          update: async (k, v) => void (chromaleon[k] = v),
+        }
+      : {
+          get: (k, d) => (k in ws ? ws[k] : k in settings ? settings[k] : d),
+          inspect: (k) => ({ key: k, globalValue: settings[k], workspaceValue: ws[k] }),
+          update: async (k, v, target) => {
+            const store = target === 2 ? ws : settings
+            if (v === undefined) delete store[k]
+            else store[k] = v
+          },
+        }
+  // Opening on activation would pop a panel in everyone's face on every window, so here it
+  // is not merely unwanted, it is an error.
+  vscode.window.createWebviewPanel = () => {
+    throw new Error('the panel should not open during activation')
+  }
+  vscode.commands = {
+    registerCommand: (id) => {
+      registered.push(id)
+      return { dispose() {} }
     },
-    window: {
-      onDidChangeActiveColorTheme: () => ({ dispose() {} }),
-      showInformationMessage: () => {},
-      showErrorMessage: () => {},
-      showQuickPick: async () => undefined,
-      registerWebviewPanelSerializer: () => ({ dispose() {} }),
-      createWebviewPanel: () => {
-        throw new Error('the panel should not open during activation')
-      },
-    },
-    commands: {
-      registerCommand: (id) => {
-        registered.push(id)
-        return { dispose() {} }
-      },
-      executeCommand: async () => {},
-    },
-    Uri: { joinPath: (...parts) => ({ fsPath: parts.join('/') }) },
-    ViewColumn: { Active: -1 },
-    ConfigurationTarget: { Global: 1, Workspace: 2 },
+    executeCommand: async () => {},
   }
 
-  const load = Module._load
-  Module._load = (req, parent, isMain) => (req === 'vscode' ? vscode : load(req, parent, isMain))
-  delete require.cache[BUNDLE]
-  const ext = require(BUNDLE)
-
-  await ext.activate({
+  const { withStub } = await activateWith(vscode, {
     extensionPath: ROOT,
     extensionUri: { fsPath: ROOT },
     extension: { packageJSON: { version: '0.0.0-test' } },
@@ -139,7 +171,6 @@ async function run(
       setKeysForSync: () => {},
     },
   })
-  Module._load = load
 
   const scoped = settings['workbench.colorCustomizations'] ?? {}
   const wsScoped = ws['workbench.colorCustomizations'] ?? {}
@@ -158,9 +189,7 @@ async function run(
     folderSvg: fs.readFileSync(folderIcon(), 'utf8'),
     folderSetDir: path.basename(path.dirname(folderIcon())),
     deactivate: async () => {
-      Module._load = (req, p, m) => (req === 'vscode' ? vscode : load(req, p, m))
-      await ext.deactivate()
-      Module._load = load
+      await withStub((ext) => ext.deactivate())
       return settings['workbench.colorCustomizations']
     },
   }
@@ -502,6 +531,227 @@ async function run(
     }
   }
 
+  console.log('\ngenerated role catalogue')
+  {
+    // generated.ts is written by build.ts as a JSON literal, so the object can be read back
+    // without running the bundle. The customizer's numbers come from here, and the whole
+    // point of generating them is that nobody can hand-write one that flatters the design.
+    const source = fs.readFileSync(path.join(ROOT, 'src', 'generated.ts'), 'utf8')
+    const runtime = JSON.parse(source.slice(source.indexOf('{'), source.lastIndexOf('}') + 1))
+    const roles = runtime.roles
+
+    check('every Palette role is catalogued', roles.length, 32)
+    checkThat(
+      'no role is listed twice',
+      new Set(roles.map((r) => r.id)).size === roles.length,
+      'duplicate role id',
+    )
+
+    // Two independent introspections of the same mapping. If they disagree, one of them is
+    // reading a stale build.
+    const accent = roles.find((r) => r.id === 'accent')
+    check('accent count agrees with the accent override list', accent.keys.length, 49)
+
+    const allKeys = roles.flatMap((r) => r.keys)
+    check('every workbench key is attributed to a role', allKeys.length, 279)
+    checkThat(
+      'no workbench key is attributed twice',
+      new Set(allKeys).size === allKeys.length,
+      'a key belongs to two roles',
+    )
+
+    // The floors are read from core/roles.ts rather than restated, so this cannot become a
+    // third copy of the same five numbers that drifts from the other two.
+    const floorSource = fs.readFileSync(path.join(ROOT, 'src', 'core', 'roles.ts'), 'utf8')
+    const allowed = [...floorSource.matchAll(/^\s+(?:\/\*\*.*\*\/\s+)?\w+: ([\d.]+),$/gm)].map(
+      (m) => Number(m[1]),
+    )
+    check('the floor table has five entries', allowed.length, 5)
+
+    // A role with a floor must be measurable against something, or the status line is
+    // counting roles it cannot actually judge.
+    const floored = roles.filter((r) => r.floor.on !== 'none')
+    checkThat(
+      'every floor comes from that table',
+      floored.every((r) => allowed.includes(r.floor.min)),
+      floored
+        .filter((r) => !allowed.includes(r.floor.min))
+        .map((r) => `${r.id}=${r.floor.min}`)
+        .join(', '),
+    )
+    checkThat(
+      'the hue ramp is all measured',
+      floored.filter((r) => r.group === 'Hue ramp').length,
+      9,
+    )
+
+    // A faint lift has to move away from the background, which on a light variant means
+    // darker. Wired to white instead, every widget border and the find-match washes vanish
+    // on Chalk, and no contrast floor catches it because they are meant to be barely there.
+    for (const [theme, wantsDark] of [
+      ['Chromaleon Chalk', true],
+      ['Chromaleon Obsidian', false],
+    ]) {
+      const p = runtime.palettes[theme]
+      checkThat(
+        `${theme} hairlines lift away from the background`,
+        (p.hairline === '#000000') === wantsDark,
+        `hairline ${p.hairline} on bg ${p.bg}`,
+      )
+    }
+    checkThat(
+      'no role paints nothing',
+      roles.every((r) => r.keys.length + r.scopes.length > 0),
+      roles
+        .filter((r) => r.keys.length + r.scopes.length === 0)
+        .map((r) => r.id)
+        .join(', '),
+    )
+
+    const ids = roles.map((r) => r.id)
+    const palettes = Object.entries(runtime.palettes)
+    check('a palette is emitted for every theme', palettes.length, 22)
+    checkThat(
+      'every palette carries every role',
+      palettes.every(([, p]) => ids.every((id) => typeof p[id] === 'string')),
+      'a palette is missing a role',
+    )
+  }
+
+  console.log('\ncustomizer opens where the setting says')
+  {
+    const open = async (location, theme = 'Chromaleon Woad') => {
+      const executed = []
+      const posted = []
+      const written = []
+      let column
+      let receive
+      const stub = baseStub()
+      stub.workspace.getConfiguration = (section) => ({
+        get: (key, fallback) => {
+          if (key === 'customizerLocation') return location
+          if (key === 'workbench.colorTheme') return theme
+          return fallback
+        },
+        inspect: () => ({}),
+        update: async (key, value) => void written.push(`${section ?? ''}.${key}=${value}`),
+      })
+      // Here the panel is the thing under test, so opening it is expected rather than fatal.
+      stub.window.createWebviewPanel = (_type, _title, viewColumn) => {
+        column = viewColumn
+        return {
+          webview: {
+            options: {},
+            html: '',
+            cspSource: 'vscode-webview:',
+            asWebviewUri: (uri) => uri,
+            onDidReceiveMessage: (handler) => {
+              receive = handler
+              return { dispose() {} }
+            },
+            postMessage: async (message) => void posted.push(message),
+          },
+          onDidDispose: () => ({ dispose() {} }),
+          reveal() {},
+        }
+      }
+      stub.commands = {
+        registerCommand: (id, handler) => {
+          if (id === 'chromaleon.openCustomizer') stub.__open = handler
+          return { dispose() {} }
+        },
+        executeCommand: async (id) => void executed.push(id),
+      }
+
+      const { withStub } = await activateWith(stub, {
+        extensionPath: ROOT,
+        extensionUri: { fsPath: ROOT },
+        extension: { packageJSON: { version: '0.0.0' } },
+        subscriptions: [],
+        globalState: { get: (k, d) => d, update: async () => {}, setKeysForSync: () => {} },
+      })
+      // Applying the active theme on activation writes settings, and should. Drop those so
+      // `written` holds only what opening and driving the panel did.
+      const activationWrites = written.splice(0)
+
+      await withStub(async () => {
+        await stub.__open()
+        // The panel asks for state as soon as its script runs; nothing is sent before that.
+        if (receive) await receive({ type: 'ready' })
+      })
+      const send = (message) => withStub(() => receive(message))
+      return { executed, column, posted, written, activationWrites, send }
+    }
+
+    // There is no ViewColumn for a separate window, so this is the only observable
+    // difference between opening in a new window and opening in this one.
+    const moved = await open('newWindow')
+    checkThat(
+      'newWindow moves the panel out to its own window',
+      moved.executed.includes('workbench.action.moveEditorToNewWindow'),
+      moved.executed.join(', ') || 'nothing executed',
+    )
+
+    const active = await open('active')
+    checkThat(
+      'active leaves the panel in this window',
+      !active.executed.includes('workbench.action.moveEditorToNewWindow'),
+      'moved anyway',
+    )
+    check('active opens in the active column', active.column, -1)
+
+    const beside = await open('beside')
+    check('beside opens in the column alongside', beside.column, -2)
+    checkThat(
+      'beside leaves the panel in this window',
+      !beside.executed.includes('workbench.action.moveEditorToNewWindow'),
+      'moved anyway',
+    )
+
+    console.log('\ncustomizer state, and what it must never write')
+    const opened = await open('active', 'Chromaleon Tyrian')
+    const state = opened.posted.find((m) => m.type === 'state')?.state
+    checkThat('the panel is sent state when it reports ready', !!state, 'nothing posted')
+
+    check('every shipped theme is offered', state.themes.length, 22)
+    check('every palette travels with them', Object.keys(state.palettes).length, 22)
+    check('the catalogue travels once, not per theme', state.roles.length, 32)
+    check('the active theme is named', state.active, 'Chromaleon Tyrian')
+    checkThat(
+      'high contrast variants are flagged rather than parsed in the panel',
+      state.themes.filter((t) => t.highContrast).length === 11,
+      `${state.themes.filter((t) => t.highContrast).length} flagged`,
+    )
+
+    // The whole point of switching themes inside the customizer is that it previews without
+    // restyling the editor the user is working in. Writing colorTheme would break that, and
+    // it is the kind of thing an innocent-looking refactor reintroduces.
+    checkThat(
+      'opening the customizer writes no settings of its own',
+      opened.written.length === 0,
+      opened.written.join(', '),
+    )
+    checkThat(
+      'the panel never sets workbench.colorTheme',
+      !opened.written.some((w) => w.includes('colorTheme')),
+      opened.written.join(', '),
+    )
+
+    // Choosing a theme is a deliberate, user-initiated act, so it goes through VS Code's own
+    // picker rather than us writing the setting behind their back.
+    await opened.send({ type: 'pickTheme' })
+    checkThat(
+      'choosing a theme defers to the VS Code picker',
+      opened.executed.includes('workbench.action.selectTheme'),
+      opened.executed.join(', '),
+    )
+    checkThat(
+      'and still writes nothing itself',
+      opened.written.length === 0,
+      opened.written.join(', '),
+    )
+  }
+
   console.log('\nevery setting is declared in package.json')
   {
     const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
@@ -522,6 +772,7 @@ async function run(
       'accentFolders',
       'hideExplorerArrows',
       'syncIconTheme',
+      'customizerLocation',
     ]
     check('manifest declares exactly what the runtime reads', names.sort(), [...READ].sort())
     checkThat(
@@ -613,30 +864,16 @@ async function run(
     // The owned-key ledger has to be registered for Settings Sync, or the keys it
     // describes become unremovable orphans on every other machine.
     let synced = null
-    const load = Module._load
-    const vscodeStub = {
-      workspace: {
-        getConfiguration: () => ({
-          get: (k, d) => d,
-          inspect: () => ({}),
-          update: async () => {},
-        }),
-        onDidChangeConfiguration: () => ({ dispose() {} }),
-      },
-      window: {
-        onDidChangeActiveColorTheme: () => ({ dispose() {} }),
-        showInformationMessage: () => {},
-        registerWebviewPanelSerializer: () => ({ dispose() {} }),
-      },
-      commands: { registerCommand: () => ({ dispose() {} }), executeCommand: async () => {} },
-      Uri: { joinPath: (...parts) => ({ fsPath: parts.join('/') }) },
-      ViewColumn: { Active: -1 },
-      ConfigurationTarget: { Global: 1 },
-    }
-    Module._load = (req, par, m) => (req === 'vscode' ? vscodeStub : load(req, par, m))
-    delete require.cache[BUNDLE]
-    await require(BUNDLE).activate({
+    const stub = baseStub()
+    stub.workspace.getConfiguration = () => ({
+      get: (k, d) => d,
+      inspect: () => ({}),
+      update: async () => {},
+    })
+    stub.commands = { registerCommand: () => ({ dispose() {} }), executeCommand: async () => {} }
+    await activateWith(stub, {
       extensionPath: ROOT,
+      extensionUri: { fsPath: ROOT },
       subscriptions: [],
       globalState: {
         get: (k, d) => d,
@@ -644,7 +881,6 @@ async function run(
         setKeysForSync: (keys) => void (synced = keys),
       },
     })
-    Module._load = load
     checkThat(
       'registers the owned-key ledger for Settings Sync',
       Array.isArray(synced) && synced.length > 0,
