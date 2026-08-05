@@ -1,6 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
+import { FLOORS } from '../core/roles'
 import { fingerprint, readLock, ROOT } from './fingerprint'
 
 /** Relative luminance per WCAG 2.x. */
@@ -129,14 +130,18 @@ async function main() {
   // change was intended and re-locked with `npm run lock`.
   const expected = (await readLock()).sha256
   const actual = await fingerprint()
-  if (actual !== expected) {
+  const drifted = actual !== expected
+  if (drifted) {
     console.log('FAIL theme fingerprint changed')
     console.log(`       expected ${expected}`)
     console.log(`       actual   ${actual}`)
     console.log('       If the change to appearance was intended, run: npm run lock')
-    process.exit(1)
+    // Deliberately not fatal here. The moment you are most likely to have broken contrast is
+    // the moment you changed a colour, so the audits below have to run and report before you
+    // decide whether to lock. Exiting here would hide exactly the failure worth seeing.
+  } else {
+    console.log(`ok   theme fingerprint ${actual.slice(0, 16)}...`)
   }
-  console.log(`ok   theme fingerprint ${actual.slice(0, 16)}...`)
 
   const dir = join(ROOT, 'themes')
   const all = (await readdir(dir)).filter((f) => f.endsWith('.json')).sort()
@@ -144,12 +149,12 @@ async function main() {
   const files = all.filter((f) => !f.includes('-Icons'))
   if (files.length === 0) throw new Error('no themes found: run the build first')
 
-  const BODY_MIN = 7
-  const SYNTAX_MIN = 3.5
-  /** Non-text UI floor, WCAG 1.4.11. */
-  const ACCENT_MIN = 3
-  /** Normal-text floor, WCAG 1.4.3 AA. */
-  const ON_ACCENT_MIN = 4.5
+  // Imported, not restated. The customizer judges an edited theme by the same table, so a
+  // number changed here changes what the panel reports in the same commit.
+  const BODY_MIN = FLOORS.body
+  const SYNTAX_MIN = FLOORS.syntax
+  const ACCENT_MIN = FLOORS.nonText
+  const ON_ACCENT_MIN = FLOORS.ui
   let failures = 0
 
   failures += await checkHighContrastPairs(dir, files)
@@ -189,6 +194,10 @@ async function main() {
       ['statusBar.foreground', 'statusBar.background'],
       ['editorSuggestWidget.foreground', 'editorSuggestWidget.background'],
       ['badge.foreground', 'badge.background'],
+      // Both of these once reached for pure white as "the brightest tone", which reads as
+      // invisible the moment the surface underneath is light.
+      ['tab.activeForeground', 'tab.activeBackground'],
+      ['list.hoverForeground', 'list.hoverBackground'],
     ] as const) {
       // Composite the surface over the editor background first. Several of
       // these are translucent, and measuring the raw hex reports a surface
@@ -199,12 +208,26 @@ async function main() {
       }
     }
 
+    // Hairlines are meant to be barely there, so no contrast floor can catch them going
+    // wrong. What can be caught is direction: a faint lift has to move away from the
+    // background, and on a light variant that means darker. Getting this backwards costs
+    // every widget border, the find-match washes and the input outlines at once, and
+    // nothing else here would notice.
+    const isLight = luminance(bg) > 0.5
+    const lightens = luminance(over(theme.colors['widget.border'], bg)) > luminance(bg)
+    if (lightens === isLight) {
+      problems.push(
+        `hairlines move the wrong way: ${theme.colors['widget.border']} over ${bg} ` +
+          `${lightens ? 'lightens' : 'darkens'} on a ${isLight ? 'light' : 'dark'} variant`,
+      )
+    }
+
     // Comments and preprocessor directives are meant to recede: they carry
     // no meaning through colour, so the syntax floor does not apply to them.
     const RECEDES = ['comment', 'preprocessor']
     // Receding text still has to be readable. Without a floor here a light variant can sink
     // its comments to near-invisible and every other check still passes.
-    const RECEDE_MIN = 1.9
+    const RECEDE_MIN = FLOORS.recede
 
     for (const rule of theme.tokenColors as Array<{
       name?: string
@@ -239,7 +262,7 @@ async function main() {
   }
 
   console.log(`\n${files.length - failures}/${files.length} themes pass`)
-  if (failures > 0) process.exit(1)
+  if (failures > 0 || drifted) process.exit(1)
 }
 
 main().catch((error) => {

@@ -44,6 +44,11 @@ export interface Palette {
   /** Cursor and bracket match. Deliberately separate from the accent. */
   cursor: string
 
+  // Faint lifts: hairline borders and the find-match washes, always used at low alpha.
+  // White on a dark variant, black on a light one. `white` cannot do this job: it only
+  // separates a surface from its background when the background is dark.
+  hairline: string
+
   white: string
   black: string
 

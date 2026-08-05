@@ -57,11 +57,11 @@ export function workbench(p: Palette): Record<string, string> {
     // chat
     'chat.avatarForeground': p.accent,
     'chat.checkpointSeparator': p.guide,
-    'chat.requestBorder': a(p.white, '0f'),
+    'chat.requestBorder': a(p.hairline, '0f'),
     'chat.requestBubbleBackground': p.surface,
     'chat.requestBubbleHoverBackground': p.surface,
     'chat.requestCodeBorder': p.lineNumber,
-    'chat.slashCommandBackground': a(p.white, '00'),
+    'chat.slashCommandBackground': a(p.hairline, '00'),
     'chat.slashCommandForeground': p.accent,
 
     // commandCenter
@@ -75,7 +75,7 @@ export function workbench(p: Palette): Record<string, string> {
     contrastBorder: a(p.bg, '00'),
     descriptionForeground: a(p.fg, 'cc'),
     disabledForeground: a(p.fgSubtle, 'ff'),
-    focusBorder: a(p.white, '00'),
+    focusBorder: a(p.hairline, '00'),
     foreground: p.fg,
 
     // debugConsole
@@ -94,14 +94,14 @@ export function workbench(p: Palette): Record<string, string> {
 
     // dropdown
     'dropdown.background': p.chrome,
-    'dropdown.border': a(p.white, '0f'),
+    'dropdown.border': a(p.hairline, '0f'),
 
     // editor
     'editor.background': p.bg,
-    'editor.findMatchBackground': a(p.white, '26'),
+    'editor.findMatchBackground': a(p.hairline, '26'),
     'editor.findMatchBorder': p.accent,
-    'editor.findMatchHighlightBackground': a(p.white, '1a'),
-    'editor.findMatchHighlightBorder': a(p.white, '4d'),
+    'editor.findMatchHighlightBackground': a(p.hairline, '1a'),
+    'editor.findMatchHighlightBorder': a(p.hairline, '4d'),
     'editor.findMatchHighlightForeground': p.fg,
     'editor.findRangeHighlightBackground': a(p.yellow, '4d'),
     'editor.foreground': p.fg,
@@ -143,7 +143,7 @@ export function workbench(p: Palette): Record<string, string> {
 
     // editorHoverWidget
     'editorHoverWidget.background': p.chrome,
-    'editorHoverWidget.border': a(p.white, '0f'),
+    'editorHoverWidget.border': a(p.hairline, '0f'),
 
     // editorIndentGuide
     'editorIndentGuide.activeBackground': p.guide,
@@ -177,7 +177,7 @@ export function workbench(p: Palette): Record<string, string> {
 
     // editorSuggestWidget
     'editorSuggestWidget.background': p.chrome,
-    'editorSuggestWidget.border': a(p.white, '0f'),
+    'editorSuggestWidget.border': a(p.hairline, '0f'),
     'editorSuggestWidget.foreground': p.fg,
     'editorSuggestWidget.highlightForeground': p.accent,
     'editorSuggestWidget.selectedBackground': a(p.surfaceAlt, '99'),
@@ -207,7 +207,7 @@ export function workbench(p: Palette): Record<string, string> {
     'extensionButton.separator': a(p.accent, '33'),
 
     // extensionIcon
-    'extensionIcon.preReleaseForeground': a(p.white, '1a'),
+    'extensionIcon.preReleaseForeground': a(p.hairline, '1a'),
     'extensionIcon.verifiedForeground': p.green,
 
     // gitDecoration
@@ -221,11 +221,11 @@ export function workbench(p: Palette): Record<string, string> {
     'icon.foreground': a(p.fg, 'b3'),
 
     // inlineChatInput
-    'inlineChatInput.border': a(p.white, '0f'),
+    'inlineChatInput.border': a(p.hairline, '0f'),
 
     // input
     'input.background': p.surface,
-    'input.border': a(p.white, '0f'),
+    'input.border': a(p.hairline, '0f'),
     'input.foreground': p.fg,
     'input.placeholderForeground': a(p.fg, '66'),
 
@@ -252,7 +252,7 @@ export function workbench(p: Palette): Record<string, string> {
     'list.focusForeground': p.fg,
     'list.highlightForeground': p.accent,
     'list.hoverBackground': p.chrome,
-    'list.hoverForeground': p.white,
+    'list.hoverForeground': p.fgBright,
     'list.inactiveSelectionBackground': a(p.fg, '1a'),
     'list.inactiveSelectionForeground': p.accent,
     'list.inactiveSelectionIconForeground': p.accent,
@@ -289,7 +289,7 @@ export function workbench(p: Palette): Record<string, string> {
     'notificationLink.foreground': p.accent,
 
     // notificationToast
-    'notificationToast.border': a(p.white, '0f'),
+    'notificationToast.border': a(p.hairline, '0f'),
 
     // notifications
     'notifications.background': p.chrome,
@@ -414,7 +414,7 @@ export function workbench(p: Palette): Record<string, string> {
     'tab.activeBackground': p.bg,
     'tab.activeBorder': p.accent,
     'tab.activeBorderTop': a(p.accent, '00'),
-    'tab.activeForeground': p.white,
+    'tab.activeForeground': p.fgBright,
     'tab.activeModifiedBorder': a(p.accent, '00'),
     'tab.border': p.bg,
     'tab.inactiveBackground': p.bg,
@@ -471,7 +471,7 @@ export function workbench(p: Palette): Record<string, string> {
     'tree.indentGuidesStroke': p.guide,
 
     // widget
-    'widget.border': a(p.white, '0f'),
+    'widget.border': a(p.hairline, '0f'),
     'widget.shadow': a(p.black, '4d'),
   }
 }

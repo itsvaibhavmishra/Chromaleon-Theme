@@ -173,6 +173,10 @@ export function defineVariant(spec: VariantSpec): Palette & { name: string; ligh
     onAccent: bestOn(accent),
     cursor: spec.cursor ?? (light ? CURSOR_LIGHT : CURSOR),
 
+    // Same direction as lift(), but an absolute rather than a mix, because the keys using it
+    // supply their own alpha and composite it themselves.
+    hairline: light ? '#000000' : '#ffffff',
+
     white: '#ffffff',
     black: '#000000',
 
