@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { buildIcons } from '../icons/build'
 import { highContrast } from '../theme/high-contrast'
 import type { Palette } from '../core/palette'
+import { type Floor, ROLES } from '../core/roles'
 import { semantic } from '../theme/semantic'
 import { tokens } from '../theme/tokens'
 import { DEFAULT_ACCENT, VARIANTS } from '../theme/variants'
@@ -66,6 +67,70 @@ function accentKeys(palette: Palette): {
   return { accent: collect(ACCENT), accentDim: collect(DIM), onAccent: collect(ON) }
 }
 
+/** A role, with everything it paints discovered rather than listed by hand. */
+interface RoleEntry {
+  id: string
+  label: string
+  group: string
+  floor: Floor
+  keys: string[]
+  scopes: string[]
+}
+
+// Renders the three mappings with a unique sentinel per role and reads back where each one
+// landed. The counts the customizer shows are therefore the real ones: a role that stops
+// painting something loses the key here in the same build that changed it.
+function roleCatalogue(palette: Palette, italics: boolean): RoleEntry[] {
+  // Scattered rather than sequential, so a value mixed from two sentinels can never collide
+  // with a third and be attributed to the wrong role.
+  const sentinel = (i: number) =>
+    '#' + ((((i + 1) * 2654435761) >>> 0) % 0xffffff).toString(16).padStart(6, '0')
+
+  // Every Palette role is a string, so a record over the same keys satisfies the type.
+  const probe = {} as Record<keyof Palette, string>
+  ROLES.forEach((role, i) => (probe[role.id] = sentinel(i)))
+  const owner = new Map(ROLES.map((role, i) => [sentinel(i), role.id as string]))
+
+  const entries = new Map<string, RoleEntry>(
+    ROLES.map((role) => [role.id, { ...role, keys: [], scopes: [] }]),
+  )
+  const attribute = (value: unknown, into: 'keys' | 'scopes', name: string) => {
+    if (typeof value !== 'string' || !value.startsWith('#')) return false
+    const id = owner.get(value.slice(0, 7).toLowerCase())
+    if (!id) return false
+    entries.get(id)![into].push(name)
+    return true
+  }
+
+  let unattributed = 0
+  for (const [key, value] of Object.entries(workbench(probe))) {
+    if (!attribute(value, 'keys', key)) unattributed++
+  }
+  // Rules that carry only a fontStyle set no colour, so they have no role to belong to.
+  for (const rule of tokens(probe, italics)) {
+    if (!rule.settings.foreground) continue
+    const scope = Array.isArray(rule.scope) ? rule.scope.join(', ') : rule.scope
+    if (!attribute(rule.settings.foreground, 'scopes', scope || 'default')) unattributed++
+  }
+  for (const [token, value] of Object.entries(semantic(probe, italics))) {
+    const colour =
+      typeof value === 'string' ? value : (value as { foreground?: string })?.foreground
+    if (!colour) continue
+    if (!attribute(colour, 'scopes', `${token} (semantic)`)) unattributed++
+  }
+
+  // A composed value would be unreachable from the role list, so the panel would show a
+  // colour the user cannot edit. Fail the build rather than ship a dead control.
+  if (unattributed > 0) {
+    throw new Error(
+      `${unattributed} theme values are not traceable to a single role. ` +
+        'The customizer can only edit what it can attribute.',
+    )
+  }
+
+  return [...entries.values()]
+}
+
 /** Scopes whose only difference between italic and non-italic builds is style. */
 function italicScopes(palette: Palette): string[] {
   const on = tokens(palette, true)
@@ -89,6 +154,7 @@ async function main() {
 
   const built: BuiltTheme[] = []
   const variantMeta: Record<string, { bg: string; accent: string; light: boolean }> = {}
+  const palettes: Record<string, Palette> = {}
 
   for (const variant of VARIANTS) {
     const { name, light, ...palette } = variant
@@ -103,6 +169,11 @@ async function main() {
     // the variant is light or dark.
     variantMeta[base] = { bg: palette.bg, accent: palette.accent, light }
     variantMeta[hc] = { bg: highContrast(palette, light).bg, accent: palette.accent, light }
+
+    // The customizer paints its canvas and its swatches from these, so it never has to read
+    // a theme file back off disk or guess at a colour the build already knows.
+    palettes[base] = palette
+    palettes[hc] = highContrast(palette, light)
   }
 
   for (const theme of built) {
@@ -128,6 +199,8 @@ async function main() {
     onAccentKeys: onAccent,
     italicScopes: italicScopes(reference),
     variants: variantMeta,
+    roles: roleCatalogue(reference, italics),
+    palettes,
   }
 
   // Guard the serialisation: JSON silently drops undefined, and a key missing
@@ -140,6 +213,8 @@ async function main() {
     ['onAccentKeys', onAccent.length],
     ['italicScopes', runtime.italicScopes.length],
     ['variants', Object.keys(variantMeta).length],
+    ['roles', ROLES.length],
+    ['palettes', Object.keys(palettes).length],
   ] as const) {
     const value = roundTripped[name]
     const actual = Array.isArray(value) ? value.length : Object.keys(value as object).length
