@@ -1,39 +1,9 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
+import { contrast, luminance, opaque, over } from '../core/color'
 import { FLOORS } from '../core/roles'
 import { fingerprint, readLock, ROOT } from './fingerprint'
-
-/** Relative luminance per WCAG 2.x. */
-function luminance(hex: string): number {
-  const n = parseInt(hex.slice(1, 7), 16)
-  const channels = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
-    const c = v / 255
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
-  })
-  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
-}
-
-// Composites `color` over `backdrop`, honouring an `#rrggbbaa` suffix. Measuring the raw
-// hex of a translucent surface reports one lighter than the one that actually renders.
-function over(color: string, backdrop: string): string {
-  const alpha = color.length === 9 ? parseInt(color.slice(7, 9), 16) / 255 : 1
-  if (alpha === 1) return color.slice(0, 7)
-  const channels = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
-  const [fr, fg, fb] = channels(color)
-  const [br, bg, bb] = channels(backdrop)
-  const blend = [
-    fr * alpha + br * (1 - alpha),
-    fg * alpha + bg * (1 - alpha),
-    fb * alpha + bb * (1 - alpha),
-  ]
-  return `#${blend.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`
-}
-
-function contrast(a: string, b: string): number {
-  const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p)
-  return (x + 0.05) / (y + 0.05)
-}
 
 // A broken icon theme fails silently in VS Code: a missing file or dangling reference
 // renders nothing and logs nothing. So verify every definition resolves, every association
@@ -168,7 +138,7 @@ async function main() {
     const bg: string = theme.colors['editor.background']
     const problems: string[] = []
 
-    const body = contrast(bg, theme.colors['editor.foreground'])
+    const body = contrast(bg, opaque(theme.colors['editor.foreground']))
     if (body < BODY_MIN) problems.push(`body text ${body.toFixed(2)}:1 (want >= ${BODY_MIN})`)
 
     // The accent must read as a UI element against the background (3:1), and
@@ -177,11 +147,11 @@ async function main() {
     // obviously wrong until you look at a button label.
     const accent = theme.colors['button.background']
     const onAccent = theme.colors['button.foreground']
-    const accentVsBg = contrast(bg, accent)
+    const accentVsBg = contrast(bg, opaque(accent))
     if (accentVsBg < ACCENT_MIN) {
       problems.push(`accent ${accent} on bg ${accentVsBg.toFixed(2)}:1 (want >= ${ACCENT_MIN})`)
     }
-    const onAccentRatio = contrast(accent, onAccent)
+    const onAccentRatio = contrast(opaque(accent), opaque(onAccent))
     if (onAccentRatio < ON_ACCENT_MIN) {
       problems.push(
         `${onAccent} on accent ${onAccentRatio.toFixed(2)}:1 (want >= ${ON_ACCENT_MIN})`,
@@ -202,7 +172,7 @@ async function main() {
       // Composite the surface over the editor background first. Several of
       // these are translucent, and measuring the raw hex reports a surface
       // lighter than the one that actually renders.
-      const ratio = contrast(over(theme.colors[bgKey], bg), theme.colors[fgKey].slice(0, 7))
+      const ratio = contrast(over(theme.colors[bgKey], bg), opaque(theme.colors[fgKey]))
       if (ratio < ON_ACCENT_MIN) {
         problems.push(`${fgKey} ${ratio.toFixed(2)}:1 (want >= ${ON_ACCENT_MIN})`)
       }
@@ -237,7 +207,7 @@ async function main() {
       const name = rule.name?.toLowerCase() ?? ''
       if (!fg) continue
       if (RECEDES.some((r) => name.includes(r))) {
-        const ratio = contrast(bg, fg.slice(0, 7))
+        const ratio = contrast(bg, opaque(fg))
         if (ratio < RECEDE_MIN) {
           problems.push(
             `${rule.name ?? 'unnamed'} ${fg} ${ratio.toFixed(2)}:1 (want >= ${RECEDE_MIN})`,
@@ -245,7 +215,7 @@ async function main() {
         }
         continue
       }
-      const ratio = contrast(bg, fg.slice(0, 7))
+      const ratio = contrast(bg, opaque(fg))
       if (ratio < SYNTAX_MIN) {
         problems.push(`${rule.name ?? 'unnamed'} ${fg} ${ratio.toFixed(2)}:1`)
       }

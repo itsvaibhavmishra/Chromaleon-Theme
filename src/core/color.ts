@@ -63,6 +63,26 @@ export function toHsl(color: string): [number, number, number] {
   return [(((h * 60) % 360) + 360) % 360, s * 100, l * 100]
 }
 
+// Composites `color` over `backdrop`, honouring an `#rrggbbaa` suffix. Measuring the raw hex
+// of a translucent surface reports one lighter than the one that actually renders.
+export function over(color: string, backdrop: string): string {
+  const alpha = color.length === 9 ? parseInt(color.slice(7, 9), 16) / 255 : 1
+  if (alpha === 1) return opaque(color)
+  const [fr, fg, fb] = parse(opaque(color))
+  const [br, bg, bb] = parse(opaque(backdrop))
+  return format([
+    fr * alpha + br * (1 - alpha),
+    fg * alpha + bg * (1 - alpha),
+    fb * alpha + bb * (1 - alpha),
+  ])
+}
+
+// Drops an `#rrggbbaa` suffix. Alpha is a compositing question, so reach for `over` when the
+// surface underneath matters; this is for the cases where it genuinely does not.
+export function opaque(color: string): string {
+  return color.slice(0, 7)
+}
+
 /** Relative luminance, per WCAG 2.x. */
 export function luminance(color: string): number {
   const [r, g, b] = parse(color).map((v) => {
