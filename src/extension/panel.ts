@@ -30,7 +30,8 @@ function panelState(): PanelState {
     id: role.id,
     label: role.label,
     group: role.group,
-    count: role.keys.length + role.scopes.length,
+    keys: [...role.keys],
+    scopes: [...role.scopes],
     floor: role.floor,
   }))
 

@@ -608,6 +608,36 @@ async function run(
         .join(', '),
     )
 
+    // The canvas is a map now: click a region and it hands back the role tagged on it. A
+    // region tagged with a role that does not actually paint that key sends people to edit
+    // the wrong colour, and nothing about the rendering would look wrong.
+    const canvas = fs.readFileSync(path.join(ROOT, 'src', 'webview', 'canvas.tsx'), 'utf8')
+    const CANVAS_REGIONS = [
+      ['sideBar.background', 'cv-side'],
+      ['sideBarTitle.foreground', 'cv-side-title'],
+      ['list.activeSelectionForeground', 'cv-tree cv-tree-on'],
+      ['sideBar.foreground', 'cv-tree'],
+      ['activityBar.background', 'cv-activity'],
+      ['editor.background', 'cv-main'],
+      ['editorLineNumber.foreground', 'cv-num'],
+      ['editor.lineHighlightBackground', 'cv-line cv-line-on'],
+      ['editorIndentGuide.background', 'cv-guide'],
+      ['statusBar.background', 'cv-status'],
+      ['panel.background', 'cv-terminal'],
+      ['chat.requestBubbleBackground', 'cv-tip'],
+      ['input.background', 'cv-compose'],
+      ['input.border', 'cv-attach'],
+    ]
+    for (const [key, className] of CANVAS_REGIONS) {
+      const owner = roles.find((r) => r.keys.includes(key))?.id
+      const tagged = canvas.match(new RegExp(`paint\\('([a-zA-Z]+)', '${className}'\\)`))?.[1]
+      checkThat(
+        `canvas .${className} is tagged with the role that paints ${key}`,
+        tagged === owner,
+        `tagged ${tagged}, ${key} is painted by ${owner}`,
+      )
+    }
+
     const ids = roles.map((r) => r.id)
     const palettes = Object.entries(runtime.palettes)
     check('a palette is emitted for every theme', palettes.length, 22)

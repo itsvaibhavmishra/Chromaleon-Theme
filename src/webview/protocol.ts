@@ -21,8 +21,10 @@ export interface RoleMeta {
   id: string
   label: string
   group: RoleGroup
-  /** Everything it paints: workbench keys plus TextMate and semantic scopes. */
-  count: number
+  /** Workbench keys it paints. */
+  keys: string[]
+  /** TextMate and semantic scopes it paints. */
+  scopes: string[]
   floor: Floor
 }
 

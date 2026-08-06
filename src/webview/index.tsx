@@ -48,6 +48,13 @@ const LOWER_MIN = 220
 const clampCanvas = (height: number) =>
   Math.max(CANVAS_MIN, Math.min(height, window.innerHeight - LOWER_MIN))
 
+// Regions that own a click. Anywhere else is dead space, and clicking dead space clears the
+// selection. The detail pane is on the list because it is the selection: dismissing a role by
+// clicking the panel describing it would pull the thing out from under the pointer. The
+// resizer is on it because a drag ends in a click, and losing the selection on every resize
+// would be its own small annoyance.
+const KEEPS_SELECTION = '.canvas, .list-pane, .detail, .resizer, .menu, button, input'
+
 const GROUPS: RoleGroup[] = ['Surfaces', 'Foregrounds', 'Accent', 'Hue ramp', 'Fixed']
 const TABS = ['Colours', 'Settings', 'Presets'] as const
 type Tab = (typeof TABS)[number]
@@ -55,6 +62,8 @@ type Tab = (typeof TABS)[number]
 interface RoleView extends RoleMeta {
   value: string
   ratio?: number
+  /** Everything it paints, keys and scopes together. */
+  count: number
 }
 
 // Resolved in the panel rather than the host, so switching which theme is being edited costs
@@ -62,9 +71,10 @@ interface RoleView extends RoleMeta {
 function resolve(roles: RoleMeta[], palette: Record<string, string>, accent: string): RoleView[] {
   return roles.map((role) => {
     const value = role.id === 'accent' ? accent : palette[role.id]
-    if (role.floor.on === 'none') return { ...role, value }
+    const count = role.keys.length + role.scopes.length
+    if (role.floor.on === 'none') return { ...role, value, count }
     const against = role.floor.on === 'accent' ? accent : palette.bg
-    return { ...role, value, ratio: contrast(value, against) }
+    return { ...role, value, count, ratio: contrast(value, against) }
   })
 }
 
@@ -208,27 +218,29 @@ function Overflow() {
   )
 }
 
-function RoleRow({ role }: { role: RoleView }) {
-  const failing =
-    role.ratio !== undefined && role.floor.min !== undefined && role.ratio < role.floor.min
+function isFailing(role: RoleView): boolean {
+  return role.ratio !== undefined && role.floor.min !== undefined && role.ratio < role.floor.min
+}
+
+function RoleRow({ role, on, onPick }: { role: RoleView; on: boolean; onPick: () => void }) {
   return (
-    <div class="role">
+    <button class={on ? 'role on' : 'role'} onClick={onPick} aria-pressed={on}>
       <Swatch value={role.value} />
       <span class="role-label">{role.label}</span>
       <code class="role-id">{role.id}</code>
-      {failing && <span class="role-ratio">{role.ratio!.toFixed(1)}</span>}
+      {isFailing(role) && <span class="role-ratio">{role.ratio!.toFixed(1)}</span>}
       <span class="role-count">{role.count}</span>
-    </div>
+    </button>
   )
 }
 
-function RoleChip({ role }: { role: RoleView }) {
+function RoleChip({ role, on, onPick }: { role: RoleView; on: boolean; onPick: () => void }) {
   return (
-    <span class="chip">
+    <button class={on ? 'chip on' : 'chip'} onClick={onPick} aria-pressed={on}>
       <Swatch value={role.value} />
       {role.label}
       <span class="chip-count">{role.count}</span>
-    </span>
+    </button>
   )
 }
 
@@ -236,21 +248,45 @@ function RoleList({
   roles,
   concepts,
   query,
+  selected,
+  onPick,
 }: {
   roles: RoleView[]
   concepts: Concept[]
   query: string
+  selected: string | null
+  onPick: (role: string) => void
 }) {
+  const listRef = useRef<HTMLDivElement>(null)
   const concept = conceptFor(concepts, query)
   // The concept's role is included by id, not by name. Searching "comment" otherwise names
   // Dimmest readable text in the match line and then filters it out of the list underneath,
   // because no role has "comment" anywhere in it. That is the one search people will try.
+  // The selected role is included for the same reason: picking it in the canvas and then
+  // typing would make the row it is highlighting disappear.
   const visible = query
-    ? roles.filter((role) => matches(role, query) || role.id === concept?.role)
+    ? roles.filter(
+        (role) => matches(role, query) || role.id === concept?.role || role.id === selected,
+      )
     : roles
 
+  // Selecting in the canvas highlights a row that is usually scrolled out of sight, and
+  // landing it against the top or bottom edge reads as "the end of the list" rather than as
+  // the answer. So centre it, but only when it was not already on screen: re-centring a row
+  // the pointer is sitting on makes the list jump under the click that selected it.
+  useEffect(() => {
+    if (!selected) return
+    const row = listRef.current?.querySelector('.on')
+    if (!row) return
+    const rowBox = row.getBoundingClientRect()
+    const listBox = listRef.current!.getBoundingClientRect()
+    if (rowBox.top < listBox.top || rowBox.bottom > listBox.bottom) {
+      row.scrollIntoView({ block: 'center' })
+    }
+  }, [selected])
+
   return (
-    <div class="list">
+    <div class="list" ref={listRef}>
       {concept && (
         <div class="match">
           <span class="match-tag">MATCH</span>
@@ -271,11 +307,23 @@ function RoleList({
             {chips ? (
               <div class="chips">
                 {inGroup.map((role) => (
-                  <RoleChip key={role.id} role={role} />
+                  <RoleChip
+                    key={role.id}
+                    role={role}
+                    on={role.id === selected}
+                    onPick={() => onPick(role.id)}
+                  />
                 ))}
               </div>
             ) : (
-              inGroup.map((role) => <RoleRow key={role.id} role={role} />)
+              inGroup.map((role) => (
+                <RoleRow
+                  key={role.id}
+                  role={role}
+                  on={role.id === selected}
+                  onPick={() => onPick(role.id)}
+                />
+              ))
             )}
           </section>
         )
@@ -342,6 +390,81 @@ function Resizer({
   )
 }
 
+// Reads the contrast as a relationship rather than a bare number. A ratio on its own means
+// nothing to someone who does not already know the floor it is being held to.
+function contrastLine(role: RoleView): string {
+  if (role.floor.on === 'none') {
+    return 'No floor of its own. Other roles are measured against this one.'
+  }
+  const surface = role.floor.on === 'accent' ? 'the accent' : 'the editor background'
+  const reads = `Reads at ${role.ratio!.toFixed(1)}:1 on ${surface}.`
+  return isFailing(role)
+    ? `${reads} Below its ${role.floor.min}:1 target.`
+    : `${reads} Clears its ${role.floor.min}:1 target.`
+}
+
+function RoleDetail({
+  role,
+  concepts,
+  onClear,
+}: {
+  role: RoleView
+  concepts: Concept[]
+  onClear: () => void
+}) {
+  // Every concept resolving here, not just the first. Two of them land on Cyan, and hiding
+  // one would understate what moves when this role changes.
+  const painted = concepts.filter((concept) => concept.role === role.id)
+
+  return (
+    <div class="detail">
+      <header>
+        <Swatch value={role.value} />
+        <div>
+          <strong>{role.label}</strong>
+          <div class="detail-sub">
+            <code>{role.id}</code> · {role.count} {role.count === 1 ? 'key' : 'keys'}
+          </div>
+        </div>
+        <button class="icon-button" onClick={onClear} title="Clear selection">
+          &times;
+        </button>
+      </header>
+
+      <code class="detail-value">{role.value}</code>
+
+      {painted.length > 0 && (
+        <p class="detail-note">{painted.map((concept) => concept.reads).join('. ')}.</p>
+      )}
+
+      <p class={isFailing(role) ? 'detail-contrast warn' : 'detail-contrast'}>
+        {contrastLine(role)}
+      </p>
+
+      <h3>What it paints</h3>
+      <div class="paints">
+        {role.keys.map((key) => (
+          <div key={key}>
+            <code>{key}</code>
+          </div>
+        ))}
+        {role.scopes.map((scope) => (
+          <div key={scope}>
+            <code>{scope}</code>
+            <span class="paints-kind">scope</span>
+          </div>
+        ))}
+        {role.count === 0 && <p class="muted">Nothing yet.</p>}
+      </div>
+
+      <footer>
+        <button disabled>Edit colour</button>
+        <button disabled>Reset this role</button>
+      </footer>
+    </div>
+  )
+}
+
 function App() {
   // Seeded from the webview's own persisted state so a reload paints immediately rather
   // than flashing empty while the host replies.
@@ -351,6 +474,7 @@ function App() {
   const [query, setQuery] = useState('')
   const [collapsed, setCollapsed] = useState(false)
   const [showTerminal, setShowTerminal] = useState(false)
+  const [selected, setSelected] = useState<string | null>(null)
   const [canvasHeight, setCanvasHeight] = useState(
     vscode.getState()?.canvasHeight ?? CANVAS_DEFAULT,
   )
@@ -364,6 +488,21 @@ function App() {
     window.addEventListener('message', onMessage)
     post({ type: 'ready' })
     return () => window.removeEventListener('message', onMessage)
+  }, [])
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelected(null)
+    }
+    const onClick = (event: MouseEvent) => {
+      if (!(event.target as HTMLElement).closest(KEEPS_SELECTION)) setSelected(null)
+    }
+    window.addEventListener('keydown', onKey)
+    document.addEventListener('click', onClick)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.removeEventListener('click', onClick)
+    }
   }, [])
 
   // The window can shrink below whatever height was dragged, or restored from a wider one.
@@ -389,6 +528,7 @@ function App() {
   const accent = state.accentOverride ?? palette.accent
   const roles = resolve(state.roles, palette, accent)
 
+  const activeRole = roles.find((role) => role.id === selected) ?? null
   const measured = roles.filter((role) => role.floor.min !== undefined)
   const failing = measured.filter((role) => role.ratio! < role.floor.min!).length
   const previewing = current !== state.active
@@ -431,7 +571,13 @@ function App() {
           </button>
         </aside>
 
-        <Canvas palette={palette} collapsed={collapsed} showTerminal={showTerminal} />
+        <Canvas
+          palette={palette}
+          collapsed={collapsed}
+          showTerminal={showTerminal}
+          selected={selected}
+          onPick={setSelected}
+        />
       </section>
 
       {/* Collapsed the canvas is a fixed strip, so there is nothing left to drag. */}
@@ -455,18 +601,32 @@ function App() {
                 value={query}
                 onInput={(event) => setQuery((event.target as HTMLInputElement).value)}
               />
-              <RoleList roles={roles} concepts={state.concepts} query={query} />
+              <RoleList
+                roles={roles}
+                concepts={state.concepts}
+                query={query}
+                selected={selected}
+                onPick={setSelected}
+              />
             </div>
             <div class="editor-pane">
-              <div class="empty">
-                <div class="empty-box" />
-                <h3>Nothing selected</h3>
-                <p>
-                  Click anything in the canvas above, or pick a role from the list. Syntax is
-                  painted by the nine hues, so clicking a keyword and clicking punctuation can land
-                  on the same row.
-                </p>
-              </div>
+              {activeRole ? (
+                <RoleDetail
+                  role={activeRole}
+                  concepts={state.concepts}
+                  onClear={() => setSelected(null)}
+                />
+              ) : (
+                <div class="empty">
+                  <div class="empty-box" />
+                  <h3>Nothing selected</h3>
+                  <p>
+                    Click anything in the canvas above, or pick a role from the list. Syntax is
+                    painted by the nine hues, so clicking a keyword and clicking punctuation can
+                    land on the same row.
+                  </p>
+                </div>
+              )}
             </div>
           </>
         ) : (
