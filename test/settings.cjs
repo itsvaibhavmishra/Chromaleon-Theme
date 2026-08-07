@@ -500,6 +500,55 @@ async function run(
     check('an untouched light install writes nothing', d.scopes, [])
   }
 
+  console.log('\nrole overrides')
+  {
+    const r = await run({ roleOverrides: { 'Chromaleon Woad': { green: '#00ff00' } } })
+    check('recolours the workbench keys the role paints', r.colors['terminal.ansiGreen'], '#00ff00')
+    check('including the translucent ones', r.colors['editorGutter.addedBackground'], '#00ff0099')
+    checkThat(
+      'and every syntax scope, or the editor would not move',
+      (r.tokens?.textMateRules ?? []).some(
+        (rule) => rule.scope === 'string' && rule.settings.foreground === '#00ff00',
+      ),
+      JSON.stringify(r.tokens?.textMateRules?.slice(0, 2)),
+    )
+    checkThat(
+      'scopes it does not paint are left alone',
+      !(r.tokens?.textMateRules ?? []).some((rule) => rule.scope === 'comment'),
+      'recoloured a scope belonging to another role',
+    )
+    check('overrides are scoped to the theme they were made on', r.scopes, ['[Chromaleon Woad]'])
+  }
+  {
+    // 119 of the 279 workbench keys render their role below full opacity. Writing a flat hex
+    // over those turns every border and hover state into a slab, and the value would still
+    // look correct in settings.json.
+    const r = await run({ roleOverrides: { 'Chromaleon Woad': { fg: '#ff0000' } } })
+    check('keeps the alpha the key renders at', r.colors['descriptionForeground'], '#ff0000cc')
+    check('and leaves opaque keys opaque', r.colors['editor.foreground'], '#ff0000')
+  }
+  {
+    const r = await run({ roleOverrides: { 'Chromaleon Basalt': { fg: '#ff0000' } } })
+    check("another theme's overrides do not leak into this one", r.scopes, [])
+  }
+  {
+    const r = await run({
+      italics: false,
+      roleOverrides: { 'Chromaleon Woad': { green: '#00ff00' } },
+    })
+    const rules = r.tokens?.textMateRules ?? []
+    checkThat(
+      'italics and recolouring share one block without clobbering',
+      rules.some((x) => x.settings.fontStyle === '') && rules.some((x) => x.settings.foreground),
+      `${rules.length} rules`,
+    )
+  }
+  {
+    const r = await run({ roleOverrides: { 'Chromaleon Woad': { green: '#00ff00' } } })
+    const left = await r.deactivate()
+    check('deactivate takes the overrides with it', left, undefined)
+  }
+
   console.log('\ncustomizer panel')
   {
     const r = await run({})
@@ -552,7 +601,12 @@ async function run(
     const accent = roles.find((r) => r.id === 'accent')
     check('accent count agrees with the accent override list', accent.keys.length, 49)
 
-    const allKeys = roles.flatMap((r) => r.keys)
+    // Alpha has to survive into the catalogue. Writing a role override without it turns every
+    // translucent border and hover state solid, and nothing about the value would look wrong.
+    const translucent = roles.flatMap((r) => r.keys).filter((k) => k.alpha)
+    check('translucent keys keep their alpha', translucent.length, 119)
+
+    const allKeys = roles.flatMap((r) => r.keys.map((k) => k.key))
     check('every workbench key is attributed to a role', allKeys.length, 279)
     checkThat(
       'no workbench key is attributed twice',
@@ -629,7 +683,7 @@ async function run(
       ['input.border', 'cv-attach'],
     ]
     for (const [key, className] of CANVAS_REGIONS) {
-      const owner = roles.find((r) => r.keys.includes(key))?.id
+      const owner = roles.find((r) => r.keys.some((k) => k.key === key))?.id
       const tagged = canvas.match(new RegExp(`paint\\('([a-zA-Z]+)', '${className}'\\)`))?.[1]
       checkThat(
         `canvas .${className} is tagged with the role that paints ${key}`,
@@ -664,7 +718,8 @@ async function run(
           return fallback
         },
         inspect: () => ({}),
-        update: async (key, value) => void written.push(`${section ?? ''}.${key}=${value}`),
+        update: async (key, value) =>
+          void written.push(`${section ?? ''}.${key}=${JSON.stringify(value)}`),
       })
       // Here the panel is the thing under test, so opening it is expected rather than fatal.
       stub.window.createWebviewPanel = (_type, _title, viewColumn) => {
@@ -767,8 +822,29 @@ async function run(
       opened.written.join(', '),
     )
 
+    // Editing writes only the override setting. If a refactor ever made it write colours
+    // directly, the ledger would stop knowing what it owns and deactivate would leave them
+    // behind, which is bug 2 in a new coat.
+    await opened.send({ type: 'setRole', theme: 'Chromaleon Tyrian', role: 'fg', value: '#ff0000' })
+    checkThat(
+      'editing a role writes the override setting and nothing else',
+      opened.written.length === 1 && opened.written[0].startsWith('chromaleon.roleOverrides='),
+      opened.written.join(', ') || 'nothing written',
+    )
+
+    // The panel edits the theme it is showing, which is the whole reason you can fix Chalk
+    // without leaving the dark theme you work in.
+    const other = await open('active', 'Chromaleon Tyrian')
+    await other.send({ type: 'setRole', theme: 'Chromaleon Chalk', role: 'fg', value: '#ff0000' })
+    checkThat(
+      'and can edit a theme that is not the active one',
+      other.written.some((w) => w.includes('Chalk')),
+      other.written.join(', '),
+    )
+
     // Choosing a theme is a deliberate, user-initiated act, so it goes through VS Code's own
     // picker rather than us writing the setting behind their back.
+    const before = opened.written.length
     await opened.send({ type: 'pickTheme' })
     checkThat(
       'choosing a theme defers to the VS Code picker',
@@ -776,9 +852,9 @@ async function run(
       opened.executed.join(', '),
     )
     checkThat(
-      'and still writes nothing itself',
-      opened.written.length === 0,
-      opened.written.join(', '),
+      'and writes nothing itself',
+      opened.written.length === before,
+      opened.written.slice(before).join(', '),
     )
   }
 
@@ -803,6 +879,7 @@ async function run(
       'hideExplorerArrows',
       'syncIconTheme',
       'customizerLocation',
+      'roleOverrides',
     ]
     check('manifest declares exactly what the runtime reads', names.sort(), [...READ].sort())
     checkThat(

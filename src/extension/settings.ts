@@ -29,6 +29,8 @@ export interface Settings {
   hideExplorerArrows: boolean
   syncIconTheme: boolean
   customizerLocation: CustomizerLocation
+  /** Per theme, per role: `{ "Chromaleon Obsidian": { "fg": "#ffffff" } }`. */
+  roleOverrides: Record<string, Record<string, string>>
 }
 
 // Defaults are duplicated in package.json's configuration block; both are asserted equal by
@@ -51,7 +53,45 @@ export function readSettings(): Settings {
     hideExplorerArrows: c.get('hideExplorerArrows', false),
     syncIconTheme: c.get('syncIconTheme', true),
     customizerLocation: c.get<CustomizerLocation>('customizerLocation', 'newWindow'),
+    roleOverrides: c.get<Settings['roleOverrides']>('roleOverrides', {}),
   }
+}
+
+// Reads only what the user set globally, then writes the whole object back. `get()` returns
+// the value merged across scopes, and writing that to Global would fold a workspace's
+// customisations permanently into the user's own settings. Bug 1, in a new place.
+export async function updateRoleOverride(
+  theme: string,
+  role: string,
+  value: string | undefined,
+): Promise<void> {
+  const config = vscode.workspace.getConfiguration(NS)
+  const all = { ...(config.inspect<Settings['roleOverrides']>('roleOverrides')?.globalValue ?? {}) }
+  const forTheme = { ...(all[theme] ?? {}) }
+
+  if (value) forTheme[role] = value
+  else delete forTheme[role]
+
+  if (Object.keys(forTheme).length > 0) all[theme] = forTheme
+  else delete all[theme]
+
+  await config.update(
+    'roleOverrides',
+    Object.keys(all).length > 0 ? all : undefined,
+    vscode.ConfigurationTarget.Global,
+  )
+}
+
+/** Drops every override on one theme, leaving the others untouched. */
+export async function clearRoleOverrides(theme: string): Promise<void> {
+  const config = vscode.workspace.getConfiguration(NS)
+  const all = { ...(config.inspect<Settings['roleOverrides']>('roleOverrides')?.globalValue ?? {}) }
+  delete all[theme]
+  await config.update(
+    'roleOverrides',
+    Object.keys(all).length > 0 ? all : undefined,
+    vscode.ConfigurationTarget.Global,
+  )
 }
 
 export interface Variant {

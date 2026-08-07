@@ -73,8 +73,10 @@ interface RoleEntry {
   label: string
   group: string
   floor: Floor
-  keys: string[]
-  scopes: string[]
+  // Alpha travels with the key. 119 of the 279 workbench keys render the role at less than
+  // full opacity, so an override written without it turns every border and hover state solid.
+  keys: AccentKey[]
+  scopes: AccentKey[]
 }
 
 // Renders the three mappings with a unique sentinel per role and reads back where each one
@@ -94,29 +96,31 @@ function roleCatalogue(palette: Palette, italics: boolean): RoleEntry[] {
   const entries = new Map<string, RoleEntry>(
     ROLES.map((role) => [role.id, { ...role, keys: [], scopes: [] }]),
   )
-  const attribute = (value: unknown, into: 'keys' | 'scopes', name: string) => {
-    if (typeof value !== 'string' || !value.startsWith('#')) return false
+  // Returns the role a rendered value belongs to, and the alpha it was rendered at.
+  const attribute = (value: unknown): { id: string; alpha: string } | null => {
+    if (typeof value !== 'string' || !value.startsWith('#')) return null
     const id = owner.get(value.slice(0, 7).toLowerCase())
-    if (!id) return false
-    entries.get(id)![into].push(name)
-    return true
+    return id ? { id, alpha: value.slice(7) } : null
   }
 
   let unattributed = 0
-  for (const [key, value] of Object.entries(workbench(probe))) {
-    if (!attribute(value, 'keys', key)) unattributed++
+  const collect = (into: 'keys' | 'scopes', name: string, value: unknown) => {
+    const hit = attribute(value)
+    if (hit) entries.get(hit.id)![into].push({ key: name, alpha: hit.alpha })
+    else unattributed++
   }
+
+  for (const [key, value] of Object.entries(workbench(probe))) collect('keys', key, value)
   // Rules that carry only a fontStyle set no colour, so they have no role to belong to.
   for (const rule of tokens(probe, italics)) {
     if (!rule.settings.foreground) continue
     const scope = Array.isArray(rule.scope) ? rule.scope.join(', ') : rule.scope
-    if (!attribute(rule.settings.foreground, 'scopes', scope || 'default')) unattributed++
+    collect('scopes', scope || 'default', rule.settings.foreground)
   }
   for (const [token, value] of Object.entries(semantic(probe, italics))) {
     const colour =
       typeof value === 'string' ? value : (value as { foreground?: string })?.foreground
-    if (!colour) continue
-    if (!attribute(colour, 'scopes', `${token} (semantic)`)) unattributed++
+    if (colour) collect('scopes', `${token} (semantic)`, colour)
   }
 
   // A composed value would be unreachable from the role list, so the panel would show a

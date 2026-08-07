@@ -875,9 +875,33 @@ button:focus-visible {
 }
 
 .detail-value {
+  font-family: var(--vscode-editor-font-family);
   font-size: 1.25em;
   letter-spacing: 0.04em;
-  user-select: text;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  color: var(--vscode-input-foreground);
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, transparent);
+}
+
+.detail-value:focus {
+  outline: 1px solid var(--sel);
+}
+
+/* A half-typed hex is not a colour. Saying so beats silently refusing to commit. */
+.detail-value.invalid {
+  border-color: var(--vscode-inputValidation-errorBorder, var(--vscode-editorError-foreground));
+}
+
+.badge-edited {
+  margin-left: 8px;
+  font-size: 0.72em;
+  letter-spacing: 0.08em;
+  padding: 1px 6px;
+  border-radius: 9px;
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background);
 }
 
 .detail-note,
@@ -912,8 +936,8 @@ button:focus-visible {
 }
 
 .paints {
-  flex: 1;
-  min-height: 60px;
+  flex: 0 1 auto;
+  max-height: 40vh;
   overflow-y: auto;
   border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.25));
   border-radius: var(--radius);
@@ -945,6 +969,15 @@ button:focus-visible {
 .detail footer {
   display: flex;
   gap: 8px;
+  margin-top: auto;
+}
+
+.detail .link {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--vscode-textLink-foreground);
 }
 
 /* 5. Empty states */

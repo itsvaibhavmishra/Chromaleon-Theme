@@ -6,7 +6,7 @@ import { resolveAccent } from '../core/accents'
 import { CONCEPTS } from '../core/roles'
 import { RUNTIME } from '../generated'
 import type { PanelState, RoleMeta, ThemeOption, ToHost, ToWebview } from '../webview/protocol'
-import { activeVariant, NS, readSettings } from './settings'
+import { activeVariant, clearRoleOverrides, NS, readSettings, updateRoleOverride } from './settings'
 
 const VIEW_TYPE = 'chromaleon.customizer'
 
@@ -30,8 +30,10 @@ function panelState(): PanelState {
     id: role.id,
     label: role.label,
     group: role.group,
-    keys: [...role.keys],
-    scopes: [...role.scopes],
+    // The panel only displays these, so it gets the names. Alpha stays host-side, where the
+    // overrides are actually written.
+    keys: role.keys.map((entry) => entry.key),
+    scopes: role.scopes.map((entry) => entry.key),
     floor: role.floor,
   }))
 
@@ -42,6 +44,7 @@ function panelState(): PanelState {
     palettes: RUNTIME.palettes,
     active: variant?.label ?? null,
     accentOverride: resolveAccent(settings.accent, settings.customAccent) ?? null,
+    overrides: settings.roleOverrides,
   }
 }
 
@@ -92,6 +95,10 @@ function wire(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): voi
         void vscode.commands.executeCommand('workbench.action.openSettings', `@ext:${NS}`)
       } else if (message.type === 'pickTheme') {
         void vscode.commands.executeCommand('workbench.action.selectTheme')
+      } else if (message.type === 'setRole') {
+        void updateRoleOverride(message.theme, message.role, message.value ?? undefined)
+      } else if (message.type === 'resetTheme') {
+        void clearRoleOverrides(message.theme)
       }
     }),
     // The panel paints its own chrome from --vscode-* variables, so VS Code restyles that

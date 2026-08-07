@@ -5,7 +5,13 @@
 export type ToWebview = { type: 'state'; state: PanelState }
 
 /** Sent by the webview, handled in the host. */
-export type ToHost = { type: 'ready' } | { type: 'openSettings' } | { type: 'pickTheme' }
+export type ToHost =
+  | { type: 'ready' }
+  | { type: 'openSettings' }
+  | { type: 'pickTheme' }
+  // `value: null` clears the override and returns the role to what the theme ships.
+  | { type: 'setRole'; theme: string; role: string; value: string | null }
+  | { type: 'resetTheme'; theme: string }
 
 export type RoleGroup = 'Surfaces' | 'Foregrounds' | 'Accent' | 'Hue ramp' | 'Fixed'
 
@@ -51,4 +57,6 @@ export interface PanelState {
   active: string | null
   /** The user's accent setting, which replaces the accent role on whichever theme is shown. */
   accentOverride: string | null
+  /** Per theme, the roles the user has changed. Everything else is as the theme ships. */
+  overrides: Record<string, Record<string, string>>
 }

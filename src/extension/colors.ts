@@ -116,6 +116,15 @@ export function overrides(settings: Settings, variant: Variant): Record<string, 
     for (const key of ['widget.shadow', 'scrollbar.shadow']) out[key] = '#00000000'
   }
 
+  // Last, so a role someone edited by hand wins over anything a setting derived. Each role
+  // expands into every workbench key it paints, at the alpha that key renders it: 119 of the
+  // 279 are translucent, and flattening those turns borders and hover states into slabs.
+  for (const [id, value] of Object.entries(settings.roleOverrides[variant.label] ?? {})) {
+    const role = RUNTIME.roles.find((entry) => entry.id === id)
+    if (!role) continue
+    for (const { key, alpha } of role.keys) out[key] = `${value}${alpha}`
+  }
+
   return out
 }
 

@@ -64,19 +64,30 @@ interface RoleView extends RoleMeta {
   ratio?: number
   /** Everything it paints, keys and scopes together. */
   count: number
+  /** True when this is the user's colour rather than the one the theme ships. */
+  edited: boolean
 }
 
 // Resolved in the panel rather than the host, so switching which theme is being edited costs
 // nothing: every palette is already here.
-function resolve(roles: RoleMeta[], palette: Record<string, string>, accent: string): RoleView[] {
+function resolve(
+  roles: RoleMeta[],
+  palette: Record<string, string>,
+  accent: string,
+  edits: Record<string, string>,
+): RoleView[] {
   return roles.map((role) => {
-    const value = role.id === 'accent' ? accent : palette[role.id]
+    const edited = edits[role.id]
+    const value = edited ?? (role.id === 'accent' ? accent : palette[role.id])
     const count = role.keys.length + role.scopes.length
-    if (role.floor.on === 'none') return { ...role, value, count }
+    const view = { ...role, value, count, edited: edited !== undefined }
+    if (role.floor.on === 'none') return view
     const against = role.floor.on === 'accent' ? accent : palette.bg
-    return { ...role, value, count, ratio: contrast(value, against) }
+    return { ...view, ratio: contrast(value, against) }
   })
 }
+
+const HEX = /^#[0-9a-fA-F]{6}$/
 
 const HIGH_CONTRAST = ' High Contrast'
 const shortName = (label: string) => label.replace(/^Chromaleon /, '')
@@ -403,18 +414,66 @@ function contrastLine(role: RoleView): string {
     : `${reads} Clears its ${role.floor.min}:1 target.`
 }
 
+// Enough to make the list concrete without turning the pane into a wall. Primary text paints
+// 70 things; nobody reads 70 identifiers, and the canvas already answers "where" far better
+// than a list of names can by ringing every region the role touches.
+const KEY_PREVIEW = 6
+
+// Committed on Enter or blur rather than per keystroke: "#ff" is not a colour, and writing
+// one per character would churn settings.json a dozen times a word. Escape abandons the edit.
+function HexField({ role, onCommit }: { role: RoleView; onCommit: (value: string) => void }) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const text = draft ?? role.value
+  const valid = HEX.test(text)
+
+  const commit = () => {
+    if (draft !== null && valid && draft !== role.value) onCommit(draft)
+    setDraft(null)
+  }
+
+  return (
+    <input
+      class={valid ? 'detail-value' : 'detail-value invalid'}
+      value={text}
+      spellcheck={false}
+      aria-label="Colour, as a hex value"
+      onInput={(event) => setDraft((event.target as HTMLInputElement).value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') (event.target as HTMLInputElement).blur()
+        else if (event.key === 'Escape') {
+          setDraft(null)
+          ;(event.target as HTMLInputElement).blur()
+        }
+      }}
+    />
+  )
+}
+
 function RoleDetail({
   role,
   concepts,
   onClear,
+  onEdit,
+  onRevert,
 }: {
   role: RoleView
   concepts: Concept[]
   onClear: () => void
+  onEdit: (value: string) => void
+  onRevert: () => void
 }) {
+  const [expanded, setExpanded] = useState(false)
   // Every concept resolving here, not just the first. Two of them land on Cyan, and hiding
   // one would understate what moves when this role changes.
-  const painted = concepts.filter((concept) => concept.role === role.id)
+  const named = concepts.filter((concept) => concept.role === role.id)
+
+  // Keys first, then scopes: the workbench ones are what someone is usually verifying, and
+  // the scopes read as a different kind of thing rather than more of the same.
+  const painted = [
+    ...role.keys.map((name) => ({ name, scope: false })),
+    ...role.scopes.map((name) => ({ name, scope: true })),
+  ]
 
   return (
     <div class="detail">
@@ -424,6 +483,7 @@ function RoleDetail({
           <strong>{role.label}</strong>
           <div class="detail-sub">
             <code>{role.id}</code> · {role.count} {role.count === 1 ? 'key' : 'keys'}
+            {role.edited && <span class="badge-edited">CHANGED</span>}
           </div>
         </div>
         <button class="icon-button" onClick={onClear} title="Clear selection">
@@ -431,10 +491,10 @@ function RoleDetail({
         </button>
       </header>
 
-      <code class="detail-value">{role.value}</code>
+      <HexField role={role} onCommit={onEdit} />
 
-      {painted.length > 0 && (
-        <p class="detail-note">{painted.map((concept) => concept.reads).join('. ')}.</p>
+      {named.length > 0 && (
+        <p class="detail-note">{named.map((concept) => concept.reads).join('. ')}.</p>
       )}
 
       <p class={isFailing(role) ? 'detail-contrast warn' : 'detail-contrast'}>
@@ -443,23 +503,24 @@ function RoleDetail({
 
       <h3>What it paints</h3>
       <div class="paints">
-        {role.keys.map((key) => (
-          <div key={key}>
-            <code>{key}</code>
-          </div>
-        ))}
-        {role.scopes.map((scope) => (
-          <div key={scope}>
-            <code>{scope}</code>
-            <span class="paints-kind">scope</span>
+        {painted.slice(0, expanded ? undefined : KEY_PREVIEW).map((entry) => (
+          <div key={entry.name}>
+            <code>{entry.name}</code>
+            {entry.scope && <span class="paints-kind">scope</span>}
           </div>
         ))}
         {role.count === 0 && <p class="muted">Nothing yet.</p>}
       </div>
+      {role.count > KEY_PREVIEW && (
+        <button class="link" onClick={() => setExpanded(!expanded)}>
+          {expanded ? 'Show fewer' : `Show all ${role.count}`}
+        </button>
+      )}
 
       <footer>
-        <button disabled>Edit colour</button>
-        <button disabled>Reset this role</button>
+        <button onClick={onRevert} disabled={!role.edited}>
+          Reset this role
+        </button>
       </footer>
     </div>
   )
@@ -526,7 +587,14 @@ function App() {
     editing && state.palettes[editing] ? editing : (state.active ?? state.themes[0].label)
   const palette = state.palettes[current]
   const accent = state.accentOverride ?? palette.accent
-  const roles = resolve(state.roles, palette, accent)
+  const edits = state.overrides[current] ?? {}
+  const roles = resolve(state.roles, palette, accent, edits)
+  const changed = Object.keys(edits).length
+
+  // The panel edits whichever theme it is showing, which is not always the active one. That
+  // is the point: you can fix Chalk without leaving the dark theme you work in.
+  const setRole = (role: string, value: string | null) =>
+    post({ type: 'setRole', theme: current, role, value })
 
   const activeRole = roles.find((role) => role.id === selected) ?? null
   const measured = roles.filter((role) => role.floor.min !== undefined)
@@ -538,15 +606,21 @@ function App() {
       <header class="context">
         <div class="context-actions">
           <button disabled>Save as preset</button>
-          <button disabled>Reset all</button>
+          <button
+            onClick={() => post({ type: 'resetTheme', theme: current })}
+            disabled={changed === 0}
+          >
+            Reset all
+          </button>
           <button disabled>Hold to compare</button>
           <Overflow />
         </div>
 
         <div class="context-theme">
-          <span class={previewing ? 'badge badge-preview' : 'badge'}>
-            {previewing ? 'PREVIEW ONLY' : 'UNMODIFIED'}
+          <span class={changed > 0 ? 'badge badge-edited' : 'badge'}>
+            {changed > 0 ? `CHANGED · ${changed}` : 'UNMODIFIED'}
           </span>
+          {previewing && <span class="badge badge-preview">PREVIEW ONLY</span>}
           <ThemePicker state={state} editing={current} onPick={setEditing} />
         </div>
       </header>
@@ -615,6 +689,8 @@ function App() {
                   role={activeRole}
                   concepts={state.concepts}
                   onClear={() => setSelected(null)}
+                  onEdit={(value) => setRole(activeRole.id, value)}
+                  onRevert={() => setRole(activeRole.id, null)}
                 />
               ) : (
                 <div class="empty">

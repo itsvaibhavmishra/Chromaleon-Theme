@@ -4,7 +4,7 @@ import { ACCENT_NAMES, THEME_DEFAULT } from '../core/accents'
 import { RUNTIME } from '../generated'
 import { applyColors, clearColors } from './colors'
 import { applyIcons, syncIconTheme } from './icons'
-import { applyItalics, clearItalics } from './italics'
+import { applyTokenColors, clearTokenColors } from './token-colors'
 import { registerForSync } from './ledger'
 import { openCustomizer, registerSerializer } from './panel'
 import { NS, readSettings } from './settings'
@@ -24,6 +24,7 @@ const RESETTABLE = [
   'accentFolders',
   'hideExplorerArrows',
   'syncIconTheme',
+  'roleOverrides',
 ]
 
 // Kept so deactivate can clean up the keys it wrote; deactivate receives no context.
@@ -36,7 +37,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const apply = async () => {
     const settings = readSettings()
     await applyColors(context, settings)
-    await applyItalics(settings)
+    await applyTokenColors(settings)
     await applyIcons(context, settings)
     await syncIconTheme(settings)
   }
@@ -93,6 +94,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 /** Leaves the user's settings clean when the extension is disabled or uninstalled. */
 export async function deactivate(): Promise<void> {
   if (active) await clearColors(active)
-  await clearItalics()
+  await clearTokenColors()
   active = undefined
 }
