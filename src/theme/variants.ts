@@ -1,6 +1,6 @@
-import { DEFAULT_ACCENT } from '../core/accents'
-import { atLeast, bestOn, darken, hsl, lighten, mix, toHsl } from '../core/color'
-import type { Palette } from '../core/palette'
+import { DEFAULT_ACCENT } from '@/core/accents'
+import { atLeast, bestOn, darken, hsl, lighten, mix, toHsl } from '@/core/color'
+import type { Palette } from '@/core/palette'
 
 // Variants differ by background, not accent, so switching one changes the room while the
 // accent stays put. The value lives in core/accents.ts next to the named accents.

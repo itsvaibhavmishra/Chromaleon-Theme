@@ -1,4 +1,4 @@
-import type { Palette } from './palette'
+import type { Palette } from '@/core/palette'
 
 export type RoleGroup = 'Surfaces' | 'Foregrounds' | 'Accent' | 'Hue ramp' | 'Fixed'
 

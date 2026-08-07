@@ -1,5 +1,5 @@
-import type { Palette } from '../core/palette'
-import { a } from '../core/color'
+import type { Palette } from '@/core/palette'
+import { a } from '@/core/color'
 
 export interface TokenRule {
   name?: string

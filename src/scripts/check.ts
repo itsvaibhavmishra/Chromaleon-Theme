@@ -1,9 +1,9 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
-import { contrast, luminance, opaque, over } from '../core/color'
-import { FLOORS } from '../core/roles'
-import { fingerprint, readLock, ROOT } from './fingerprint'
+import { contrast, luminance, opaque, over } from '@/core/color'
+import { FLOORS } from '@/core/roles'
+import { fingerprint, readLock, ROOT } from '@/scripts/fingerprint'
 
 // A broken icon theme fails silently in VS Code: a missing file or dangling reference
 // renders nothing and logs nothing. So verify every definition resolves, every association

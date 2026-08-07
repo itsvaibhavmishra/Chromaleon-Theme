@@ -1,5 +1,5 @@
-import { atLeast, darken, lighten } from '../core/color'
-import type { Palette } from '../core/palette'
+import { atLeast, darken, lighten } from '@/core/color'
+import type { Palette } from '@/core/palette'
 
 // High contrast is a transform, not a second palette. The editor background never moves:
 // raising contrast means separating the regions AROUND the code, and dimming the editor

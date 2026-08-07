@@ -1,6 +1,6 @@
 import { writeFile } from 'node:fs/promises'
 
-import { fingerprint, LOCK, readLock } from './fingerprint'
+import { fingerprint, LOCK, readLock } from '@/scripts/fingerprint'
 
 // Re-records the theme fingerprint. Only correct when a change to how the themes LOOK is
 // intended: refactors and tooling changes must leave it untouched.

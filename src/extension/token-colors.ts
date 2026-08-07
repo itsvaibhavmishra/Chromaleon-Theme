@@ -1,5 +1,10 @@
-import { RUNTIME } from '../generated'
-import { activeVariant, readGlobalObject, writeGlobalObject, type Settings } from './settings'
+import { RUNTIME } from '@/generated'
+import {
+  activeVariant,
+  readGlobalObject,
+  writeGlobalObject,
+  type Settings,
+} from '@/extension/settings'
 
 const SECTION = 'editor.tokenColorCustomizations'
 

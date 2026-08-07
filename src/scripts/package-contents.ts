@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 
-import { ROOT } from './fingerprint'
+import { ROOT } from '@/scripts/fingerprint'
 
 // Everything the vsix is allowed to contain. .vscodeignore is an allowlist, so this asserts
 // the result of that rather than hunting for names: anything here and not on the list either

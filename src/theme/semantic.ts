@@ -1,4 +1,4 @@
-import type { Palette } from '../core/palette'
+import type { Palette } from '@/core/palette'
 
 export function semantic(p: Palette, _italics: boolean): Record<string, unknown> {
   return {

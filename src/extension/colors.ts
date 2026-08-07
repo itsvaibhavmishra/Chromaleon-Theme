@@ -1,16 +1,16 @@
 import type * as vscode from 'vscode'
 
-import { resolveAccent } from '../core/accents'
-import { bestOn, mix } from '../core/color'
-import { RUNTIME } from '../generated'
-import { readOwned, stripOwned, writeOwned, type Owned } from './ledger'
+import { resolveAccent } from '@/core/accents'
+import { bestOn, mix } from '@/core/color'
+import { RUNTIME } from '@/generated'
+import { readOwned, stripOwned, writeOwned, type Owned } from '@/extension/ledger'
 import {
   activeVariant,
   readGlobalObject,
   writeGlobalObject,
   type Settings,
   type Variant,
-} from './settings'
+} from '@/extension/settings'
 
 const SECTION = 'workbench.colorCustomizations'
 

@@ -1,5 +1,5 @@
-import type { Palette } from '../core/palette'
-import { a } from '../core/color'
+import type { Palette } from '@/core/palette'
+import { a } from '@/core/color'
 
 // Maps every workbench colour key VS Code exposes onto a palette role, grouped by
 // namespace. Adding a variant never touches this file.

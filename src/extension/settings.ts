@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 
-import { THEME_DEFAULT } from '../core/accents'
-import { RUNTIME } from '../generated'
+import { THEME_DEFAULT } from '@/core/accents'
+import { RUNTIME } from '@/generated'
 
 export const NS = 'chromaleon'
 

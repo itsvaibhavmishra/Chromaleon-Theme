@@ -1,10 +1,10 @@
 import { render } from 'preact'
 
-import './style.css'
+import '@/webview/style.css'
 import { useEffect, useRef, useState } from 'preact/hooks'
 
-import { contrast } from '../core/color'
-import { Canvas } from './canvas'
+import { contrast } from '@/core/color'
+import { Canvas } from '@/webview/canvas'
 import type {
   Concept,
   PanelState,
@@ -13,7 +13,7 @@ import type {
   ThemeOption,
   ToHost,
   ToWebview,
-} from './protocol'
+} from '@/webview/protocol'
 
 /** Survives a reload. Everything here is the panel's own, never the user's settings. */
 interface Persisted {

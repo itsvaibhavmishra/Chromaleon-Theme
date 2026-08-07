@@ -1,13 +1,13 @@
 import * as vscode from 'vscode'
 
-import { ACCENT_NAMES, THEME_DEFAULT } from '../core/accents'
-import { RUNTIME } from '../generated'
-import { applyColors, clearColors } from './colors'
-import { applyIcons, syncIconTheme } from './icons'
-import { applyTokenColors, clearTokenColors } from './token-colors'
-import { registerForSync } from './ledger'
-import { openCustomizer, registerSerializer } from './panel'
-import { NS, readSettings } from './settings'
+import { ACCENT_NAMES, THEME_DEFAULT } from '@/core/accents'
+import { RUNTIME } from '@/generated'
+import { applyColors, clearColors } from '@/extension/colors'
+import { applyIcons, syncIconTheme } from '@/extension/icons'
+import { applyTokenColors, clearTokenColors } from '@/extension/token-colors'
+import { registerForSync } from '@/extension/ledger'
+import { openCustomizer, registerSerializer } from '@/extension/panel'
+import { NS, readSettings } from '@/extension/settings'
 
 const RESETTABLE = [
   'accent',

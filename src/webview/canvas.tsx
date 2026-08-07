@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact'
 
-import { ACTIVE_FILE, SAMPLE, TREE } from './sample'
+import { ACTIVE_FILE, SAMPLE, TREE } from '@/webview/sample'
 
 // A miniature of the parts of a VS Code window an extension can actually paint. Anything
 // belonging to another extension is deliberately absent: showing it would promise a mapping

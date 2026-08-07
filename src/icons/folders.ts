@@ -1,7 +1,7 @@
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { recolorFolder } from './recolor'
+import { recolorFolder } from '@/icons/recolor'
 
 // Folder icons live in a directory named for the state that produced them, and the icon
 // theme JSON points at that directory by name.

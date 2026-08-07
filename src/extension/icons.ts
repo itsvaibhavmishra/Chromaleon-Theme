@@ -3,10 +3,10 @@ import { join } from 'node:path'
 
 import * as vscode from 'vscode'
 
-import { resolveAccent } from '../core/accents'
-import { RUNTIME } from '../generated'
-import { folderSetId, syncFolderSet } from '../icons/folders'
-import { activeVariant, type Settings } from './settings'
+import { resolveAccent } from '@/core/accents'
+import { RUNTIME } from '@/generated'
+import { folderSetId, syncFolderSet } from '@/icons/folders'
+import { activeVariant, type Settings } from '@/extension/settings'
 
 const FOLDER_PATH = /^\.\.\/icons\/folders\/[^/]+\//
 

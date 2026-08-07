@@ -2,7 +2,7 @@ import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promi
 import { createRequire } from 'node:module'
 import { basename, dirname, join, resolve } from 'node:path'
 
-import { folderSetId, syncFolderSet } from './folders'
+import { folderSetId, syncFolderSet } from '@/icons/folders'
 
 const require = createRequire(import.meta.url)
 

@@ -13,12 +13,15 @@ export default tseslint.config(
   // Type-aware linting is scoped to src: it needs a tsconfig project, and neither the flat
   // config nor the CommonJS test harness is in one.
   {
-    files: ['src/**/*.ts'],
+    files: ['src/**/*.{ts,tsx}'],
     extends: [...tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
     },
     rules: {
+      // One way to name a module. A relative path survives a file move by silently pointing
+      // somewhere else, and two spellings for the same import make a module look like two.
+      'no-restricted-imports': ['error', { patterns: ['./*', '../*'] }],
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/await-thenable': 'error',

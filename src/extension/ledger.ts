@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode'
 
-import { NS } from './settings'
+import { NS } from '@/extension/settings'
 
 // Which keys we wrote, per scope block, so a later pass can remove exactly what it added
 // and nothing the user set by hand.

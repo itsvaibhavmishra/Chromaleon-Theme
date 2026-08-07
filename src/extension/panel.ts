@@ -2,11 +2,17 @@ import { randomBytes } from 'node:crypto'
 
 import * as vscode from 'vscode'
 
-import { resolveAccent } from '../core/accents'
-import { CONCEPTS } from '../core/roles'
-import { RUNTIME } from '../generated'
-import type { PanelState, RoleMeta, ThemeOption, ToHost, ToWebview } from '../webview/protocol'
-import { activeVariant, clearRoleOverrides, NS, readSettings, updateRoleOverride } from './settings'
+import { resolveAccent } from '@/core/accents'
+import { CONCEPTS } from '@/core/roles'
+import { RUNTIME } from '@/generated'
+import type { PanelState, RoleMeta, ThemeOption, ToHost, ToWebview } from '@/webview/protocol'
+import {
+  activeVariant,
+  clearRoleOverrides,
+  NS,
+  readSettings,
+  updateRoleOverride,
+} from '@/extension/settings'
 
 const VIEW_TYPE = 'chromaleon.customizer'
 
