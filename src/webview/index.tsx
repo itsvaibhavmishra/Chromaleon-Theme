@@ -3,14 +3,14 @@ import { render } from 'preact'
 import '@/webview/style.css'
 import { useEffect, useRef, useState } from 'preact/hooks'
 
-import { contrast } from '@/core/color'
+import { contrast, hsl, toHsl } from '@/core/color'
 import { Canvas } from '@/webview/canvas'
 import type {
   Concept,
   PanelState,
   RoleGroup,
+  PresetView,
   RoleMeta,
-  ThemeOption,
   ToHost,
   ToWebview,
 } from '@/webview/protocol'
@@ -48,11 +48,8 @@ const LOWER_MIN = 220
 const clampCanvas = (height: number) =>
   Math.max(CANVAS_MIN, Math.min(height, window.innerHeight - LOWER_MIN))
 
-// Regions that own a click. Anywhere else is dead space, and clicking dead space clears the
-// selection. The detail pane is on the list because it is the selection: dismissing a role by
-// clicking the panel describing it would pull the thing out from under the pointer. The
-// resizer is on it because a drag ends in a click, and losing the selection on every resize
-// would be its own small annoyance.
+// Regions that own a click; anywhere else clears the selection. The detail pane is here
+// because it is the selection, and the resizer because a drag ends in a click.
 const KEEPS_SELECTION = '.canvas, .list-pane, .detail, .resizer, .menu, button, input'
 
 const GROUPS: RoleGroup[] = ['Surfaces', 'Foregrounds', 'Accent', 'Hue ramp', 'Fixed']
@@ -88,6 +85,14 @@ function resolve(
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/
+
+// What a preset or a shipped theme actually renders at. `palettes` is keyed by shipped label
+// only, so looking a preset id up in it directly returns nothing and every swatch goes black.
+function paletteFor(state: PanelState, id: string): Record<string, string> {
+  const preset = state.presets[id]
+  const shipped = state.palettes[preset ? preset.base : id] ?? {}
+  return preset ? { ...shipped, ...preset.overrides } : shipped
+}
 
 const HIGH_CONTRAST = ' High Contrast'
 const shortName = (label: string) => label.replace(/^Chromaleon /, '')
@@ -140,57 +145,83 @@ function useDismiss(open: boolean, close: () => void) {
 
 function ThemePicker({
   state,
-  editing,
+  viewing,
+  label,
   onPick,
 }: {
   state: PanelState
-  editing: string
-  onPick: (label: string) => void
+  viewing: string
+  label: string
+  onPick: (id: string) => void
 }) {
   const [open, setOpen] = useState(false)
   const ref = useDismiss(open, () => setOpen(false))
-  const palette = state.palettes[editing]
-  const presets: ThemeOption[] = []
+  const mine = Object.entries(state.presets)
+  // The background, for the button and every row alike: it is what tells two themes apart at
+  // a glance. Read from saved presets, so it moves on save rather than mid-edit.
+  const swatch = (id: string) => paletteFor(state, id).bg ?? '#000000'
+
+  const choose = (id: string) => {
+    onPick(id)
+    setOpen(false)
+  }
 
   return (
     <div class="picker" ref={ref}>
       <button class="picker-button" onClick={() => setOpen(!open)} aria-expanded={open}>
-        <Swatch value={state.accentOverride ?? palette.accent} />
-        <span>{shortName(editing)}</span>
+        <Swatch value={swatch(viewing)} />
+        <span>{label}</span>
         <Chevron />
       </button>
 
       {open && (
-        <div class={presets.length > 0 ? 'menu menu-wide' : 'menu'}>
+        <div class={mine.length > 0 ? 'menu menu-wide' : 'menu'}>
+          {/* Yours first: once you have made one, it is what you came back for. */}
+          {mine.length > 0 && (
+            <div class="menu-col">
+              <h3>Yours</h3>
+              <div class="menu-scroll">
+                {mine.map(([id, preset]) => (
+                  <button
+                    key={id}
+                    class={id === viewing ? 'menu-item on' : 'menu-item'}
+                    onClick={() => choose(id)}
+                  >
+                    <Swatch value={swatch(id)} />
+                    <span class="menu-name">
+                      {preset.name}
+                      <i class="hc">from {shortName(preset.base).replace(HIGH_CONTRAST, '')}</i>
+                    </span>
+                    {state.activePresets[preset.base] === id && preset.base === state.active && (
+                      <span class="tag">In VS Code</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div class="menu-col">
             <h3>Shipped</h3>
             <div class="menu-scroll">
               {state.themes.map((theme) => (
                 <button
                   key={theme.label}
-                  class={theme.label === editing ? 'menu-item on' : 'menu-item'}
-                  onClick={() => {
-                    onPick(theme.label)
-                    setOpen(false)
-                  }}
+                  class={theme.label === viewing ? 'menu-item on' : 'menu-item'}
+                  onClick={() => choose(theme.label)}
                 >
-                  <Swatch value={state.palettes[theme.label].bg} />
+                  <Swatch value={swatch(theme.label)} />
                   <span class="menu-name">
                     {shortName(theme.label).replace(HIGH_CONTRAST, '')}
                     {theme.highContrast && <i class="hc">High Contrast</i>}
                   </span>
-                  {theme.label === state.active && <span class="tag">In VS Code</span>}
+                  {theme.label === state.active && !state.activePresets[theme.label] && (
+                    <span class="tag">In VS Code</span>
+                  )}
                 </button>
               ))}
             </div>
           </div>
-
-          {presets.length > 0 && (
-            <div class="menu-col">
-              <h3>Yours</h3>
-              <div class="menu-scroll" />
-            </div>
-          )}
         </div>
       )}
     </div>
@@ -270,21 +301,16 @@ function RoleList({
 }) {
   const listRef = useRef<HTMLDivElement>(null)
   const concept = conceptFor(concepts, query)
-  // The concept's role is included by id, not by name. Searching "comment" otherwise names
-  // Dimmest readable text in the match line and then filters it out of the list underneath,
-  // because no role has "comment" anywhere in it. That is the one search people will try.
-  // The selected role is included for the same reason: picking it in the canvas and then
-  // typing would make the row it is highlighting disappear.
+  // Concept and selection are included by id. Otherwise searching "comment" names Dimmest
+  // readable text and then filters that very row out, since no role contains the word.
   const visible = query
     ? roles.filter(
         (role) => matches(role, query) || role.id === concept?.role || role.id === selected,
       )
     : roles
 
-  // Selecting in the canvas highlights a row that is usually scrolled out of sight, and
-  // landing it against the top or bottom edge reads as "the end of the list" rather than as
-  // the answer. So centre it, but only when it was not already on screen: re-centring a row
-  // the pointer is sitting on makes the list jump under the click that selected it.
+  // Centre a row picked in the canvas, since it is usually off screen and an edge reads as
+  // the end of the list. Only when off screen, or the list jumps under your own click.
   useEffect(() => {
     if (!selected) return
     const row = listRef.current?.querySelector('.on')
@@ -345,11 +371,8 @@ function RoleList({
   )
 }
 
-// Splits the canvas from everything below it. Pointer capture keeps the drag on the handle
-// even when the pointer outruns it, which is what stops a fast drag from selecting text or
-// dropping the gesture over the canvas.
-// onResize repaints, onCommit writes it down. Splitting them keeps a drag from persisting
-// state on every pointermove, which is sixty writes a second to store one number.
+// Pointer capture keeps a fast drag on the handle rather than selecting text behind it.
+// onResize repaints, onCommit writes: otherwise a drag persists sixty times a second.
 function Resizer({
   height,
   onResize,
@@ -414,13 +437,69 @@ function contrastLine(role: RoleView): string {
     : `${reads} Clears its ${role.floor.min}:1 target.`
 }
 
-// Enough to make the list concrete without turning the pane into a wall. Primary text paints
-// 70 things; nobody reads 70 identifiers, and the canvas already answers "where" far better
-// than a list of names can by ringing every region the role touches.
+// Primary text paints 70 things and nobody reads 70 identifiers. The canvas answers "where"
+// better anyway, by ringing every region the role touches.
 const KEY_PREVIEW = 6
 
+// Saturation across, lightness down, hue on its own slider. HSL throughout, because the
+// palettes are authored in HSL and the square should move the axes they were designed on.
+function Picker({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+  // Held here rather than re-derived from the hex every frame. A grey has no hue to read
+  // back, so dragging to the left edge would otherwise snap the whole square to red.
+  const [[h, s, l], setHsl] = useState(() => toHsl(value))
+  const ours = useRef<string | null>(null)
+  const square = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (value !== ours.current) setHsl(toHsl(value))
+  }, [value])
+
+  const emit = (next: [number, number, number]) => {
+    setHsl(next)
+    const hex = hsl(...next)
+    ours.current = hex
+    onChange(hex)
+  }
+
+  const drag = (event: PointerEvent) => {
+    const box = square.current!
+    box.setPointerCapture(event.pointerId)
+    const move = (at: PointerEvent) => {
+      const rect = box.getBoundingClientRect()
+      const x = Math.min(1, Math.max(0, (at.clientX - rect.left) / rect.width))
+      const y = Math.min(1, Math.max(0, (at.clientY - rect.top) / rect.height))
+      emit([h, x * 100, (1 - y) * 100])
+    }
+    move(event)
+    const stop = () => {
+      box.releasePointerCapture(event.pointerId)
+      box.removeEventListener('pointermove', move)
+      box.removeEventListener('pointerup', stop)
+    }
+    box.addEventListener('pointermove', move)
+    box.addEventListener('pointerup', stop)
+  }
+
+  return (
+    <div class="picker-body">
+      <div class="sv" ref={square} onPointerDown={drag} style={{ '--hue': hsl(h, 100, 50) }}>
+        <span class="sv-dot" style={{ left: `${s}%`, top: `${100 - l}%`, background: value }} />
+      </div>
+      <input
+        class="hue"
+        type="range"
+        min="0"
+        max="359"
+        value={Math.round(h)}
+        aria-label="Hue"
+        onInput={(event) => emit([Number((event.target as HTMLInputElement).value), s, l])}
+      />
+    </div>
+  )
+}
+
 // Committed on Enter or blur rather than per keystroke: "#ff" is not a colour, and writing
-// one per character would churn settings.json a dozen times a word. Escape abandons the edit.
+// one per character would churn the draft a dozen times a word. Escape abandons the edit.
 function HexField({ role, onCommit }: { role: RoleView; onCommit: (value: string) => void }) {
   const [draft, setDraft] = useState<string | null>(null)
   const text = draft ?? role.value
@@ -486,11 +565,15 @@ function RoleDetail({
             {role.edited && <span class="badge-edited">CHANGED</span>}
           </div>
         </div>
+        <button onClick={onRevert} disabled={!role.edited}>
+          Reset this role
+        </button>
         <button class="icon-button" onClick={onClear} title="Clear selection">
           &times;
         </button>
       </header>
 
+      <Picker value={role.value} onChange={onEdit} />
       <HexField role={role} onCommit={onEdit} />
 
       {named.length > 0 && (
@@ -516,12 +599,6 @@ function RoleDetail({
           {expanded ? 'Show fewer' : `Show all ${role.count}`}
         </button>
       )}
-
-      <footer>
-        <button onClick={onRevert} disabled={!role.edited}>
-          Reset this role
-        </button>
-      </footer>
     </div>
   )
 }
@@ -536,12 +613,19 @@ function App() {
   const [collapsed, setCollapsed] = useState(false)
   const [showTerminal, setShowTerminal] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
+  // Edits live here until saved. Nothing the panel does reaches the editor on its own.
+  const [draft, setDraft] = useState<Record<string, string>>({})
+  const [comparing, setComparing] = useState(false)
   const [canvasHeight, setCanvasHeight] = useState(
     vscode.getState()?.canvasHeight ?? CANVAS_DEFAULT,
   )
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<ToWebview>) => {
+      // Saving a shipped theme forks it, so follow the panel onto the preset that now holds
+      // the edits. The draft is left alone: it matches what was just saved, and clearing it
+      // before the new state arrives would flash the canvas back to the base.
+      if (event.data.type === 'saved') return setEditing(event.data.preset)
       if (event.data.type !== 'state') return
       setState(event.data.state)
       persist({ state: event.data.state })
@@ -581,47 +665,112 @@ function App() {
   if (!state) return <p class="muted">Loading</p>
   if (state.themes.length === 0) return <p class="muted">No themes available.</p>
 
-  // Follows VS Code until the user picks something else here, and never the other way round:
-  // switching inside the customizer must not restyle the editor they are working in.
-  const current =
-    editing && state.palettes[editing] ? editing : (state.active ?? state.themes[0].label)
-  const palette = state.palettes[current]
+  // A preset id or a shipped theme label. Follows VS Code until you pick something here, and
+  // never the other way round: switching in the panel must not restyle the editor.
+  const fallback = state.active ?? state.themes[0].label
+  const suggested = state.active ? (state.activePresets[state.active] ?? state.active) : fallback
+  const viewing =
+    editing && (state.presets[editing] || state.palettes[editing]) ? editing : suggested
+
+  const viewingPreset = state.presets[viewing] as PresetView | undefined
+  const base = viewingPreset ? viewingPreset.base : viewing
+  const palette = state.palettes[base] ?? state.palettes[fallback]
   const accent = state.accentOverride ?? palette.accent
-  const edits = state.overrides[current] ?? {}
+  const saved = viewingPreset ? viewingPreset.overrides : {}
+  // What is actually edited. Compare is a view state and must not reach this, or holding it
+  // would make Save write an empty set and disable the compare button out from under the hold.
+  const edits = { ...saved, ...draft }
   const roles = resolve(state.roles, palette, accent, edits)
+
+  const unsaved = Object.keys(draft).some((id) => draft[id] !== saved[id])
   const changed = Object.keys(edits).length
 
-  // The panel edits whichever theme it is showing, which is not always the active one. That
-  // is the point: you can fix Chalk without leaving the dark theme you work in.
   const setRole = (role: string, value: string | null) =>
-    post({ type: 'setRole', theme: current, role, value })
+    setDraft((current) => {
+      const next = { ...current }
+      if (value === null) delete next[role]
+      else next[role] = value
+      return next
+    })
 
+  // Saving a draft against a shipped theme forks it: the host decides that, not the panel.
+  const save = () =>
+    post({ type: 'save', base, preset: viewingPreset ? viewing : null, overrides: edits })
+
+  const label = viewingPreset ? viewingPreset.name : shortName(base)
   const activeRole = roles.find((role) => role.id === selected) ?? null
   const measured = roles.filter((role) => role.floor.min !== undefined)
   const failing = measured.filter((role) => role.ratio! < role.floor.min!).length
-  const previewing = current !== state.active
+  // Previewing means the editor is not showing what the panel is: either a different base,
+  // or a preset that is not the one switched on for it.
+  const previewing =
+    base !== state.active || state.activePresets[base] !== (viewingPreset ? viewing : undefined)
 
   return (
     <div class="app">
       <header class="context">
         <div class="context-actions">
-          <button disabled>Save as preset</button>
+          <button onClick={save} disabled={!unsaved}>
+            {viewingPreset ? 'Save' : 'Save as preset'}
+          </button>
           <button
-            onClick={() => post({ type: 'resetTheme', theme: current })}
+            onClick={() => viewingPreset && post({ type: 'deletePreset', preset: viewing })}
+            disabled={!viewingPreset}
+          >
+            Delete preset
+          </button>
+          <button
+            onClick={() => {
+              // Both halves, or resetting a saved preset would leave the draft still showing
+              // the edits and read as nothing having happened.
+              setDraft({})
+              if (viewingPreset) post({ type: 'resetPreset', preset: viewing })
+            }}
             disabled={changed === 0}
           >
             Reset all
           </button>
-          <button disabled>Hold to compare</button>
+          <button
+            onPointerDown={() => setComparing(true)}
+            onPointerUp={() => setComparing(false)}
+            onPointerLeave={() => setComparing(false)}
+            disabled={changed === 0}
+          >
+            Hold to compare
+          </button>
           <Overflow />
         </div>
 
         <div class="context-theme">
-          <span class={changed > 0 ? 'badge badge-edited' : 'badge'}>
-            {changed > 0 ? `CHANGED · ${changed}` : 'UNMODIFIED'}
-          </span>
+          {!viewingPreset && <span class="badge">READ ONLY</span>}
+          {unsaved && <span class="badge badge-unsaved">UNSAVED</span>}
+          {!unsaved && viewingPreset && (
+            <span class={changed > 0 ? 'badge badge-edited' : 'badge'}>
+              {changed > 0 ? `CHANGED · ${changed}` : 'UNMODIFIED'}
+            </span>
+          )}
           {previewing && <span class="badge badge-preview">PREVIEW ONLY</span>}
-          <ThemePicker state={state} editing={current} onPick={setEditing} />
+          {previewing && (
+            <button
+              class="apply"
+              onClick={() =>
+                post({ type: 'applyTheme', base, preset: viewingPreset ? viewing : null })
+              }
+              disabled={unsaved}
+              title={unsaved ? 'Save first' : undefined}
+            >
+              Apply theme
+            </button>
+          )}
+          <ThemePicker
+            state={state}
+            viewing={viewing}
+            label={label}
+            onPick={(id) => {
+              setDraft({})
+              setEditing(id)
+            }}
+          />
         </div>
       </header>
 
@@ -645,8 +794,10 @@ function App() {
           </button>
         </aside>
 
+        {/* The one place compare applies: it shows the theme as it ships, dropping the draft
+            and anything already saved rather than only the unsaved half. */}
         <Canvas
-          palette={palette}
+          palette={{ ...palette, accent, ...(comparing ? {} : edits) }}
           collapsed={collapsed}
           showTerminal={showTerminal}
           selected={selected}
@@ -701,6 +852,12 @@ function App() {
                     painted by the nine hues, so clicking a keyword and clicking punctuation can
                     land on the same row.
                   </p>
+                  {!viewingPreset && (
+                    <p class="empty-note">
+                      This is a shipped theme, so it cannot be changed. Editing a colour copies it
+                      into a preset of your own first.
+                    </p>
+                  )}
                 </div>
               )}
             </div>

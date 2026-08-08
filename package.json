@@ -282,18 +282,17 @@
           "markdownDescription": "Where **Open Customizer** puts the panel.",
           "order": 15
         },
-        "chromaleon.roleOverrides": {
+        "chromaleon.presets": {
           "type": "object",
           "default": {},
           "order": 16,
-          "markdownDescription": "Colours you changed in the customizer, per theme and per role. Edited through **Chromaleon: Open Customizer** rather than by hand.",
-          "additionalProperties": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string",
-              "pattern": "^#[0-9a-fA-F]{6}$"
-            }
-          }
+          "markdownDescription": "Themes you have made. A shipped theme is never edited: changing a colour copies it into a preset first. Managed through **Chromaleon: Open Customizer**."
+        },
+        "chromaleon.activePresets": {
+          "type": "object",
+          "default": {},
+          "order": 17,
+          "markdownDescription": "Which of your presets is switched on for each shipped theme."
         }
       }
     },

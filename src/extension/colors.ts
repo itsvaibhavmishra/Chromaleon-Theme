@@ -14,6 +14,14 @@ import {
 
 const SECTION = 'workbench.colorCustomizations'
 
+// A preset only applies while the theme it was taken from is the active one. Presets are
+// edits to a specific room, so wearing a Chalk preset on Obsidian would be meaningless.
+export function activeOverrides(settings: Settings, label: string): Record<string, string> {
+  const id = settings.activePresets[label]
+  const preset = id ? settings.presets[id] : undefined
+  return preset && preset.base === label ? preset.overrides : {}
+}
+
 // Only the keys a setting actually changes are emitted, so the theme file stays the
 // source of truth for everything else and an untouched install writes nothing.
 export function overrides(settings: Settings, variant: Variant): Record<string, string> {
@@ -116,10 +124,9 @@ export function overrides(settings: Settings, variant: Variant): Record<string, 
     for (const key of ['widget.shadow', 'scrollbar.shadow']) out[key] = '#00000000'
   }
 
-  // Last, so a role someone edited by hand wins over anything a setting derived. Each role
-  // expands into every workbench key it paints, at the alpha that key renders it: 119 of the
-  // 279 are translucent, and flattening those turns borders and hover states into slabs.
-  for (const [id, value] of Object.entries(settings.roleOverrides[variant.label] ?? {})) {
+  // Last, so a hand-edited role beats anything a setting derived. Alpha comes along: 119 of
+  // the 279 keys are translucent, and flattening those turns borders into slabs.
+  for (const [id, value] of Object.entries(activeOverrides(settings, variant.label))) {
     const role = RUNTIME.roles.find((entry) => entry.id === id)
     if (!role) continue
     for (const { key, alpha } of role.keys) out[key] = `${value}${alpha}`

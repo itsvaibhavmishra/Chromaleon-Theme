@@ -94,6 +94,19 @@ button:focus-visible {
   color: var(--vscode-editorWarning-foreground);
 }
 
+.badge-unsaved {
+  color: var(
+    --vscode-gitDecoration-modifiedResourceForeground,
+    var(--vscode-editorWarning-foreground)
+  );
+}
+
+.context-actions .apply,
+.context-theme .apply {
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+
 .context-actions {
   display: flex;
   align-items: center;
@@ -840,7 +853,7 @@ button:focus-visible {
   flex: 1;
   display: flex;
   min-width: 0;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 /* 5. The selected role */
@@ -852,19 +865,30 @@ button:focus-visible {
   flex-direction: column;
   padding: 16px 18px;
   gap: 12px;
+  overflow-y: auto;
 }
 
 .detail header {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  position: sticky;
+  top: -16px;
+  z-index: 1;
+  margin: -16px -18px 0;
+  padding: 16px 18px 8px;
+  background: var(--vscode-editor-background);
 }
 
 .detail header strong {
   font-size: 1.05em;
 }
 
-.detail header .icon-button {
+.detail header button {
+  flex: none;
+}
+
+.detail header button:first-of-type {
   margin-left: auto;
 }
 
@@ -872,6 +896,64 @@ button:focus-visible {
   margin-top: 2px;
   font-size: 0.9em;
   color: var(--vscode-descriptionForeground);
+}
+
+/* The square is the hue at full strength, washed white across and black down. Two gradients
+   over one colour is the whole picker: no canvas, no image, nothing to load. */
+.picker-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sv {
+  position: relative;
+  height: 150px;
+  border-radius: var(--radius);
+  cursor: crosshair;
+  touch-action: none;
+  background:
+    linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent),
+    var(--hue);
+}
+
+.sv-dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.hue {
+  width: 100%;
+  height: 12px;
+  appearance: none;
+  border-radius: 6px;
+  background: linear-gradient(
+    to right,
+    #f00 0%,
+    #ff0 17%,
+    #0f0 33%,
+    #0ff 50%,
+    #00f 67%,
+    #f0f 83%,
+    #f00 100%
+  );
+}
+
+.hue::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  background: transparent;
+  cursor: grab;
 }
 
 .detail-value {
@@ -936,9 +1018,7 @@ button:focus-visible {
 }
 
 .paints {
-  flex: 0 1 auto;
-  max-height: 40vh;
-  overflow-y: auto;
+  flex: none;
   border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.25));
   border-radius: var(--radius);
 }
@@ -969,7 +1049,7 @@ button:focus-visible {
 .detail footer {
   display: flex;
   gap: 8px;
-  margin-top: auto;
+  padding-bottom: 4px;
 }
 
 .detail .link {

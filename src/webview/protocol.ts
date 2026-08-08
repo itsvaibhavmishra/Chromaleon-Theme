@@ -2,16 +2,23 @@
 // message shape cannot drift on one side without the other failing to compile.
 
 /** Sent by the host, handled in the webview. */
-export type ToWebview = { type: 'state'; state: PanelState }
+export type ToWebview =
+  | { type: 'state'; state: PanelState }
+  // The panel cannot know the id of a preset the host just forked for it, so it is told.
+  | { type: 'saved'; preset: string }
 
 /** Sent by the webview, handled in the host. */
 export type ToHost =
   | { type: 'ready' }
   | { type: 'openSettings' }
   | { type: 'pickTheme' }
-  // `value: null` clears the override and returns the role to what the theme ships.
-  | { type: 'setRole'; theme: string; role: string; value: string | null }
-  | { type: 'resetTheme'; theme: string }
+  // The panel holds edits as a draft and sends the whole set on save. `preset: null` means it
+  // is showing a shipped theme, so the host forks it first and the 22 are never written to.
+  | { type: 'save'; base: string; preset: string | null; overrides: Record<string, string> }
+  // Explicit, and the only thing that changes the theme VS Code is running.
+  | { type: 'applyTheme'; base: string; preset: string | null }
+  | { type: 'resetPreset'; preset: string }
+  | { type: 'deletePreset'; preset: string }
 
 export type RoleGroup = 'Surfaces' | 'Foregrounds' | 'Accent' | 'Hue ramp' | 'Fixed'
 
@@ -57,6 +64,14 @@ export interface PanelState {
   active: string | null
   /** The user's accent setting, which replaces the accent role on whichever theme is shown. */
   accentOverride: string | null
-  /** Per theme, the roles the user has changed. Everything else is as the theme ships. */
-  overrides: Record<string, Record<string, string>>
+  /** Everything the user has made. Shipped themes are read-only origins. */
+  presets: Record<string, PresetView>
+  /** Which preset is switched on for each shipped theme. */
+  activePresets: Record<string, string>
+}
+
+export interface PresetView {
+  name: string
+  base: string
+  overrides: Record<string, string>
 }

@@ -8,10 +8,12 @@ import { RUNTIME } from '@/generated'
 import type { PanelState, RoleMeta, ThemeOption, ToHost, ToWebview } from '@/webview/protocol'
 import {
   activeVariant,
-  clearRoleOverrides,
+  applyTheme,
+  deletePreset,
   NS,
   readSettings,
-  updateRoleOverride,
+  resetPreset,
+  savePreset,
 } from '@/extension/settings'
 
 const VIEW_TYPE = 'chromaleon.customizer'
@@ -21,9 +23,8 @@ let current: vscode.WebviewPanel | undefined
 
 const HIGH_CONTRAST = ' High Contrast'
 
-// The whole catalogue and every palette go over at once. The panel can then show any theme
-// without a round trip, which is what lets someone compare variants inside the customizer
-// without changing the theme they are actually working in.
+// Catalogue and every palette in one message, so the panel can show any theme without a
+// round trip and without changing the one you are working in.
 function panelState(): PanelState {
   const settings = readSettings()
   const variant = activeVariant()
@@ -50,7 +51,8 @@ function panelState(): PanelState {
     palettes: RUNTIME.palettes,
     active: variant?.label ?? null,
     accentOverride: resolveAccent(settings.accent, settings.customAccent) ?? null,
-    overrides: settings.roleOverrides,
+    presets: settings.presets,
+    activePresets: settings.activePresets,
   }
 }
 
@@ -101,10 +103,17 @@ function wire(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): voi
         void vscode.commands.executeCommand('workbench.action.openSettings', `@ext:${NS}`)
       } else if (message.type === 'pickTheme') {
         void vscode.commands.executeCommand('workbench.action.selectTheme')
-      } else if (message.type === 'setRole') {
-        void updateRoleOverride(message.theme, message.role, message.value ?? undefined)
-      } else if (message.type === 'resetTheme') {
-        void clearRoleOverrides(message.theme)
+      } else if (message.type === 'save') {
+        void savePreset(message.base, message.preset, message.overrides).then((preset) => {
+          const saved: ToWebview = { type: 'saved', preset }
+          return panel.webview.postMessage(saved)
+        })
+      } else if (message.type === 'applyTheme') {
+        void applyTheme(message.base, message.preset)
+      } else if (message.type === 'resetPreset') {
+        void resetPreset(message.preset)
+      } else if (message.type === 'deletePreset') {
+        void deletePreset(message.preset)
       }
     }),
     // The panel paints its own chrome from --vscode-* variables, so VS Code restyles that
@@ -143,9 +152,8 @@ export async function openCustomizer(context: vscode.ExtensionContext): Promise<
     context,
   )
 
-  // There is no ViewColumn for a separate window, so the panel is created in this one and
-  // moved. It has focus at this point, which is what the move command acts on. A failure
-  // here is not worth surfacing: the panel is already open, just in the original window.
+  // No ViewColumn means a separate window, so create here and move; the panel has focus,
+  // which is what the command acts on. A failure is not worth surfacing: it is already open.
   if (location === 'newWindow') {
     try {
       await vscode.commands.executeCommand('workbench.action.moveEditorToNewWindow')

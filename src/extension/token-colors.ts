@@ -1,3 +1,4 @@
+import { activeOverrides } from '@/extension/colors'
 import { RUNTIME } from '@/generated'
 import {
   activeVariant,
@@ -25,9 +26,8 @@ const ITALIC_SCOPES = new Set<string>(RUNTIME.italicScopes)
 // italic ones predate this and are still matched by shape, which is why both tests exist.
 const MARK = `${RUNTIME.brand}:`
 
-// Recognises only the rules this extension writes: a named colour rule of ours, or one of
-// the build's italic scopes with fontStyle cleared. Anything else in the block is the
-// user's and stays.
+// Only the rules we write: a named colour rule of ours, or a build italic scope with
+// fontStyle cleared. Anything else in the block is the user's and stays.
 function isOurs(rule: Rule): boolean {
   if (typeof rule.name === 'string' && rule.name.startsWith(MARK)) return true
   return (
@@ -56,12 +56,11 @@ function stripOurs(all: Record<string, unknown>): void {
   }
 }
 
-// Most of a syntax role's weight is in scopes rather than workbench keys: Red paints 12 keys
-// and 17 scopes. Recolouring the keys alone would move error badges and leave the syntax
-// untouched, which is the opposite of what someone editing Red is asking for.
+// Red paints 12 workbench keys and 17 scopes. Recolouring the keys alone would move error
+// badges and leave the syntax untouched, which is the opposite of the request.
 function roleRules(settings: Settings, label: string): Rule[] {
   const rules: Rule[] = []
-  for (const [id, value] of Object.entries(settings.roleOverrides[label] ?? {})) {
+  for (const [id, value] of Object.entries(activeOverrides(settings, label))) {
     const role = RUNTIME.roles.find((entry) => entry.id === id)
     if (!role) continue
     for (const { key, alpha } of role.scopes) {

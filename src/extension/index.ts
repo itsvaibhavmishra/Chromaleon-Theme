@@ -24,7 +24,8 @@ const RESETTABLE = [
   'accentFolders',
   'hideExplorerArrows',
   'syncIconTheme',
-  'roleOverrides',
+  'presets',
+  'activePresets',
 ]
 
 // Kept so deactivate can clean up the keys it wrote; deactivate receives no context.

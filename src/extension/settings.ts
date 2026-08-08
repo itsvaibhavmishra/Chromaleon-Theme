@@ -29,8 +29,19 @@ export interface Settings {
   hideExplorerArrows: boolean
   syncIconTheme: boolean
   customizerLocation: CustomizerLocation
-  /** Per theme, per role: `{ "Chromaleon Obsidian": { "fg": "#ffffff" } }`. */
-  roleOverrides: Record<string, Record<string, string>>
+  /** Everything the user has made, keyed by id. */
+  presets: Record<string, Preset>
+  /** Which preset is switched on for each shipped theme, keyed by that theme's label. */
+  activePresets: Record<string, string>
+}
+
+// A shipped theme is a read-only origin. Editing one forks it into a preset and the edit
+// lands there, so the 22 themes can never drift from what the build produced.
+export interface Preset {
+  name: string
+  /** The shipped theme it was taken from. Overrides only apply while that theme is active. */
+  base: string
+  overrides: Record<string, string>
 }
 
 // Defaults are duplicated in package.json's configuration block; both are asserted equal by
@@ -53,45 +64,81 @@ export function readSettings(): Settings {
     hideExplorerArrows: c.get('hideExplorerArrows', false),
     syncIconTheme: c.get('syncIconTheme', true),
     customizerLocation: c.get<CustomizerLocation>('customizerLocation', 'newWindow'),
-    roleOverrides: c.get<Settings['roleOverrides']>('roleOverrides', {}),
+    presets: c.get<Settings['presets']>('presets', {}),
+    activePresets: c.get<Settings['activePresets']>('activePresets', {}),
   }
 }
 
-// Reads only what the user set globally, then writes the whole object back. `get()` returns
-// the value merged across scopes, and writing that to Global would fold a workspace's
-// customisations permanently into the user's own settings. Bug 1, in a new place.
-export async function updateRoleOverride(
-  theme: string,
-  role: string,
-  value: string | undefined,
-): Promise<void> {
-  const config = vscode.workspace.getConfiguration(NS)
-  const all = { ...(config.inspect<Settings['roleOverrides']>('roleOverrides')?.globalValue ?? {}) }
-  const forTheme = { ...(all[theme] ?? {}) }
-
-  if (value) forTheme[role] = value
-  else delete forTheme[role]
-
-  if (Object.keys(forTheme).length > 0) all[theme] = forTheme
-  else delete all[theme]
-
-  await config.update(
-    'roleOverrides',
-    Object.keys(all).length > 0 ? all : undefined,
-    vscode.ConfigurationTarget.Global,
-  )
+// Only what the user set globally: `get()` merges scopes, and writing that back folds a
+// workspace's customisations into their own settings. Bug 1, in a new place.
+function globalValue<K extends keyof Settings>(key: K): Settings[K] | undefined {
+  return vscode.workspace.getConfiguration(NS).inspect<Settings[K]>(key)?.globalValue
 }
 
-/** Drops every override on one theme, leaving the others untouched. */
-export async function clearRoleOverrides(theme: string): Promise<void> {
-  const config = vscode.workspace.getConfiguration(NS)
-  const all = { ...(config.inspect<Settings['roleOverrides']>('roleOverrides')?.globalValue ?? {}) }
-  delete all[theme]
-  await config.update(
-    'roleOverrides',
-    Object.keys(all).length > 0 ? all : undefined,
-    vscode.ConfigurationTarget.Global,
-  )
+async function write<K extends keyof Settings>(key: K, value: Settings[K]): Promise<void> {
+  const empty = typeof value === 'object' && value !== null && Object.keys(value).length === 0
+  await vscode.workspace
+    .getConfiguration(NS)
+    .update(key, empty ? undefined : value, vscode.ConfigurationTarget.Global)
+}
+
+// Numbered from the highest ever used rather than the count, so deleting Preset 2 does not
+// make the next one Preset 2 again and quietly reuse a name someone recognises.
+function nextId(presets: Record<string, Preset>): { id: string; name: string } {
+  const used = Object.keys(presets).map((id) => Number(id.replace('p', '')) || 0)
+  const n = Math.max(0, ...used) + 1
+  return { id: `p${n}`, name: `Preset ${n}` }
+}
+
+// Saving a draft against a shipped theme forks it first, so the 22 are never written to.
+// Returns the preset the draft landed in, new or existing.
+export async function savePreset(
+  base: string,
+  id: string | null,
+  overrides: Record<string, string>,
+): Promise<string> {
+  const presets = { ...(globalValue('presets') ?? {}) }
+  const target = id ?? nextId(presets).id
+  const existing = presets[target]
+  const name = existing?.name ?? nextId(presets).name
+
+  presets[target] = { name, base: existing?.base ?? base, overrides }
+  await write('presets', presets)
+  return target
+}
+
+// Switches VS Code to a theme, and to one of your presets on it. The only path that changes
+// the running theme: everything else in the panel is a preview.
+export async function applyTheme(base: string, id: string | null): Promise<void> {
+  const active = { ...(globalValue('activePresets') ?? {}) }
+  if (id) active[base] = id
+  else delete active[base]
+  await write('activePresets', active)
+
+  await vscode.workspace
+    .getConfiguration()
+    .update('workbench.colorTheme', base, vscode.ConfigurationTarget.Global)
+}
+
+/** Drops every override on a preset, leaving the preset itself in place. */
+export async function resetPreset(id: string): Promise<void> {
+  const presets = { ...(globalValue('presets') ?? {}) }
+  if (!presets[id]) return
+  presets[id] = { ...presets[id], overrides: {} }
+  await write('presets', presets)
+}
+
+/** Removes a preset, and switches it off wherever it was in use. */
+export async function deletePreset(id: string): Promise<void> {
+  const presets = { ...(globalValue('presets') ?? {}) }
+  delete presets[id]
+  await write('presets', presets)
+
+  const active = { ...(globalValue('activePresets') ?? {}) }
+  for (const [base, current] of Object.entries(active)) {
+    if (current === id) delete active[base]
+  }
+  await write('activePresets', active)
 }
 
 export interface Variant {
@@ -111,9 +158,8 @@ export function activeVariant(): Variant | undefined {
   return meta ? { label, ...meta } : undefined
 }
 
-// Reads only what the user actually set at the global level. `get()` returns the value merged
-// across default/user/workspace, and writing that back to Global would copy a workspace's
-// customisations permanently into the user's own settings.
+// Only what the user set globally: writing back a merged value would copy a workspace's
+// customisations permanently into their own settings.
 export function readGlobalObject(section: string): Record<string, unknown> {
   const inspected = vscode.workspace.getConfiguration().inspect<Record<string, unknown>>(section)
   return { ...(inspected?.globalValue ?? {}) }
