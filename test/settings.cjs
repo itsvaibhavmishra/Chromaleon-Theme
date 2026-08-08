@@ -500,9 +500,15 @@ async function run(
     check('an untouched light install writes nothing', d.scopes, [])
   }
 
-  console.log('\nrole overrides')
+  console.log('\npresets')
   {
-    const r = await run({ roleOverrides: { 'Chromaleon Woad': { green: '#00ff00' } } })
+    const on = {
+      presets: {
+        p1: { name: 'Preset 1', base: 'Chromaleon Woad', overrides: { green: '#00ff00' } },
+      },
+      activePresets: { 'Chromaleon Woad': 'p1' },
+    }
+    const r = await run(on)
     check('recolours the workbench keys the role paints', r.colors['terminal.ansiGreen'], '#00ff00')
     check('including the translucent ones', r.colors['editorGutter.addedBackground'], '#00ff0099')
     checkThat(
@@ -523,7 +529,10 @@ async function run(
     // 119 of the 279 workbench keys render their role below full opacity. Writing a flat hex
     // over those turns every border and hover state into a slab, and the value would still
     // look correct in settings.json.
-    const r = await run({ roleOverrides: { 'Chromaleon Woad': { fg: '#ff0000' } } })
+    const r = await run({
+      presets: { p1: { name: 'Preset 1', base: 'Chromaleon Woad', overrides: { fg: '#ff0000' } } },
+      activePresets: { 'Chromaleon Woad': 'p1' },
+    })
     check('keeps the alpha the key renders at', r.colors['descriptionForeground'], '#ff0000cc')
     check('and leaves opaque keys opaque', r.colors['editor.foreground'], '#ff0000')
   }
@@ -534,7 +543,10 @@ async function run(
   {
     const r = await run({
       italics: false,
-      roleOverrides: { 'Chromaleon Woad': { green: '#00ff00' } },
+      presets: {
+        p1: { name: 'Preset 1', base: 'Chromaleon Woad', overrides: { green: '#00ff00' } },
+      },
+      activePresets: { 'Chromaleon Woad': 'p1' },
     })
     const rules = r.tokens?.textMateRules ?? []
     checkThat(
@@ -544,7 +556,12 @@ async function run(
     )
   }
   {
-    const r = await run({ roleOverrides: { 'Chromaleon Woad': { green: '#00ff00' } } })
+    const r = await run({
+      presets: {
+        p1: { name: 'Preset 1', base: 'Chromaleon Woad', overrides: { green: '#00ff00' } },
+      },
+      activePresets: { 'Chromaleon Woad': 'p1' },
+    })
     const left = await r.deactivate()
     check('deactivate takes the overrides with it', left, undefined)
   }
@@ -710,16 +727,24 @@ async function run(
       const written = []
       let column
       let receive
+      // inspect() reflects what update() wrote. A stub that always reports nothing lets a
+      // read-modify-write cycle look like it works when it is really overwriting itself,
+      // which is exactly the shape of bug 1.
+      const store = {}
       const stub = baseStub()
       stub.workspace.getConfiguration = (section) => ({
         get: (key, fallback) => {
+          if (key in store) return store[key]
           if (key === 'customizerLocation') return location
           if (key === 'workbench.colorTheme') return theme
           return fallback
         },
-        inspect: () => ({}),
-        update: async (key, value) =>
-          void written.push(`${section ?? ''}.${key}=${JSON.stringify(value)}`),
+        inspect: (key) => ({ key, globalValue: store[key] }),
+        update: async (key, value) => {
+          if (value === undefined) delete store[key]
+          else store[key] = value
+          written.push(`${section ?? ''}.${key}=${JSON.stringify(value)}`)
+        },
       })
       // Here the panel is the thing under test, so opening it is expected rather than fatal.
       stub.window.createWebviewPanel = (_type, _title, viewColumn) => {
@@ -764,7 +789,17 @@ async function run(
         // The panel asks for state as soon as its script runs; nothing is sent before that.
         if (receive) await receive({ type: 'ready' })
       })
-      const send = (message) => withStub(() => receive(message))
+      for (let i = 0; i < 8; i++) await new Promise((r) => setTimeout(r, 0))
+      // onDidReceiveMessage cannot be awaited by VS Code, so the handlers are fire and
+      // forget. Settling the queue here is what lets a test see writes that a real user
+      // would see land a few milliseconds later.
+      const settle = async () => {
+        for (let i = 0; i < 8; i++) await new Promise((r) => setTimeout(r, 0))
+      }
+      const send = async (message) => {
+        await withStub(() => receive(message))
+        await settle()
+      }
       return { executed, column, posted, written, activationWrites, send }
     }
 
@@ -822,28 +857,82 @@ async function run(
       opened.written.join(', '),
     )
 
-    // Editing writes only the override setting. If a refactor ever made it write colours
-    // directly, the ledger would stop knowing what it owns and deactivate would leave them
-    // behind, which is bug 2 in a new coat.
-    await opened.send({ type: 'setRole', theme: 'Chromaleon Tyrian', role: 'fg', value: '#ff0000' })
+    // A shipped theme is an origin, never a target. Saving a draft against one forks it, and
+    // the 22 stay exactly as the build made them no matter what anyone does in the panel.
+    await opened.send({
+      type: 'save',
+      base: 'Chromaleon Tyrian',
+      preset: null,
+      overrides: { fg: '#ff0000' },
+    })
+    const wrote = opened.written.join(' | ')
     checkThat(
-      'editing a role writes the override setting and nothing else',
-      opened.written.length === 1 && opened.written[0].startsWith('chromaleon.roleOverrides='),
-      opened.written.join(', ') || 'nothing written',
+      'saving against a shipped theme creates a preset instead',
+      wrote.includes('chromaleon.presets=') && wrote.includes('"base":"Chromaleon Tyrian"'),
+      wrote || 'nothing written',
+    )
+    checkThat(
+      'the new preset is numbered from one',
+      wrote.includes('"name":"Preset 1"') && wrote.includes('"overrides":{"fg":"#ff0000"}'),
+      wrote,
     )
 
-    // The panel edits the theme it is showing, which is the whole reason you can fix Chalk
-    // without leaving the dark theme you work in.
-    const other = await open('active', 'Chromaleon Tyrian')
-    await other.send({ type: 'setRole', theme: 'Chromaleon Chalk', role: 'fg', value: '#ff0000' })
+    // Saving must not switch the editor over on its own: that is what Apply is for.
+    // The panel cannot know the id of a preset the host just forked, so it has to be told or
+    // it keeps showing the shipped theme it was editing a moment ago.
+    const told = opened.posted.filter((m) => m.type === 'saved').at(-1)
     checkThat(
-      'and can edit a theme that is not the active one',
-      other.written.some((w) => w.includes('Chalk')),
-      other.written.join(', '),
+      'the panel is told which preset the save landed in',
+      told?.preset === 'p1',
+      JSON.stringify(told) || 'nothing posted back',
+    )
+
+    checkThat(
+      'saving changes neither the running theme nor which preset is on',
+      !wrote.includes('colorTheme') && !wrote.includes('activePresets'),
+      wrote,
+    )
+
+    // Apply is the one path allowed to move the editor, and it moves both halves together.
+    const beforeApply = opened.written.length
+    await opened.send({ type: 'applyTheme', base: 'Chromaleon Tyrian', preset: 'p1' })
+    const applied = opened.written.slice(beforeApply).join(' | ')
+    checkThat(
+      'applying switches the theme and turns the preset on',
+      applied.includes('workbench.colorTheme="Chromaleon Tyrian"') &&
+        applied.includes('"Chromaleon Tyrian":"p1"'),
+      applied,
     )
 
     // Choosing a theme is a deliberate, user-initiated act, so it goes through VS Code's own
     // picker rather than us writing the setting behind their back.
+    // Reset empties a preset but keeps it, so the name and the base survive. Delete is the
+    // one that removes it, and it has to switch it off too or activePresets keeps a dangling id.
+    await opened.send({ type: 'resetPreset', preset: 'p1' })
+    const afterReset = opened.written.at(-1)
+    checkThat(
+      'resetting empties the overrides and keeps the preset',
+      afterReset.includes('"overrides":{}') && afterReset.includes('"name":"Preset 1"'),
+      afterReset,
+    )
+
+    await opened.send({ type: 'deletePreset', preset: 'p1' })
+    const afterDelete = opened.written.slice(-2).join(' | ')
+    checkThat(
+      'deleting removes it and switches it off, leaving no dangling id',
+      !afterDelete.includes('"p1"') || afterDelete.includes('presets=undefined'),
+      afterDelete,
+    )
+
+    // Applying a shipped theme with no preset is how you get back to what we ship.
+    await opened.send({ type: 'applyTheme', base: 'Chromaleon Chalk', preset: null })
+    const plain = opened.written.slice(-2).join(' | ')
+    checkThat(
+      'applying a shipped theme with no preset clears the one that was on',
+      plain.includes('workbench.colorTheme="Chromaleon Chalk"'),
+      plain,
+    )
+
     const before = opened.written.length
     await opened.send({ type: 'pickTheme' })
     checkThat(
@@ -879,7 +968,8 @@ async function run(
       'hideExplorerArrows',
       'syncIconTheme',
       'customizerLocation',
-      'roleOverrides',
+      'presets',
+      'activePresets',
     ]
     check('manifest declares exactly what the runtime reads', names.sort(), [...READ].sort())
     checkThat(
