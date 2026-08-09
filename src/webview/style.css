@@ -5,9 +5,12 @@
 @import '@/webview/style/base.css';
 @import '@/webview/style/chrome.css';
 @import '@/webview/style/canvas.css';
+@import '@/webview/style/chat.css';
+@import '@/webview/style/canvas-modes.css';
 @import '@/webview/style/tabs.css';
 @import '@/webview/style/split.css';
 @import '@/webview/style/detail.css';
 @import '@/webview/style/settings.css';
+@import '@/webview/style/presets.css';
 @import '@/webview/style/status.css';
 @import '@/webview/style/narrow.css';

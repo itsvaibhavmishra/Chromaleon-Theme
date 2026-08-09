@@ -1,0 +1,253 @@
+/* 5c. The presets tab */
+
+.presets-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 14px 18px 18px;
+  border: 2px dashed transparent;
+}
+
+/* The whole pane is the drop target, so the feedback has to be the whole pane too. */
+.presets-pane.over {
+  border-color: var(--sel);
+  background: var(--vscode-list-hoverBackground);
+}
+
+.presets-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.presets-bar input {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 5px 9px;
+  border-radius: var(--radius);
+  color: var(--vscode-input-foreground, var(--vscode-foreground));
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, var(--vscode-widget-border, transparent));
+}
+
+.presets-count {
+  flex: none;
+  font-size: 0.86em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.danger-text {
+  color: var(--danger-text);
+}
+
+/* Wide enough that the name and the line under it never wrap, which is what made the first
+   version look broken: every card had a sentence folded across three lines. */
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+.preset-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.25));
+  background: var(--vscode-editorWidget-background, transparent);
+  cursor: pointer;
+}
+
+.preset-card:hover {
+  border-color: var(--vscode-descriptionForeground);
+}
+
+/* An inset shadow paints behind the card's own children, so the opaque preview strip hid the
+   top half of it. An overlay sits above everything instead. */
+.preset-card.on {
+  border-color: var(--sel);
+}
+
+.preset-card.on::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px var(--sel),
+    inset 0 0 26px -4px var(--sel);
+}
+
+/* The preview is the point of the card: two dark presets differ in the ramp, not the name. */
+.preset-preview {
+  display: flex;
+  height: 46px;
+  padding: 12px 10px 0;
+  gap: 3px;
+  align-items: stretch;
+}
+
+.preset-preview span {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+}
+
+.preset-body {
+  padding: 9px 11px 0;
+}
+
+.preset-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.preset-title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preset-sub {
+  margin-top: 2px;
+  font-size: 0.84em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--vscode-descriptionForeground);
+}
+
+.preset-actions {
+  display: flex;
+  gap: 6px;
+  padding: 9px 11px 11px;
+}
+
+.preset-actions button {
+  flex: 1;
+  padding: 4px 8px;
+}
+
+.presets-empty {
+  max-width: 46ch;
+  margin: 48px auto;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+}
+
+.presets-empty h3 {
+  margin: 0 0 6px;
+  color: var(--vscode-foreground);
+}
+
+.presets-drop {
+  margin: 18px 0 0;
+  padding-top: 12px;
+  font-size: 0.84em;
+  text-align: center;
+  border-top: var(--line);
+  color: var(--vscode-descriptionForeground);
+}
+
+/* The import review */
+
+.dialog-wide {
+  width: min(560px, calc(100vw - 48px));
+}
+
+.import-list {
+  max-height: 46vh;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.import-list h3 {
+  margin: 12px 0 4px;
+  font-size: 0.74em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+}
+
+.import-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 4px 2px;
+  cursor: pointer;
+}
+
+.import-row input {
+  margin: 0;
+  accent-color: var(--sel);
+}
+
+.import-name {
+  font-weight: 500;
+}
+
+.import-skip {
+  margin: 4px 0 0;
+  font-size: 0.88em;
+  color: var(--danger-text);
+}
+
+.presets-file {
+  display: none;
+}
+
+.presets-drop kbd {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--vscode-textCodeBlock-background, var(--vscode-input-background));
+}
+
+/* Sits over the preview, which is the part of the card the eye is about. */
+.preset-peek {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  display: flex;
+  padding: 4px;
+  opacity: 0;
+  border: none;
+  border-radius: 4px;
+  color: var(--vscode-foreground);
+  background: var(--vscode-editorWidget-background, rgb(0 0 0 / 45%));
+}
+
+.preset-card:hover .preset-peek,
+.preset-peek:focus-visible {
+  opacity: 0.85;
+}
+
+.preset-peek:hover {
+  opacity: 1;
+  color: var(--sel);
+}
+
+.preset-peek .eye {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.import-dupe {
+  flex: none;
+  font-size: 0.78em;
+  letter-spacing: 0.04em;
+  padding: 1px 7px;
+  border-radius: 9px;
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background);
+}

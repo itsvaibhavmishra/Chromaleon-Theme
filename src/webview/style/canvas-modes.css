@@ -1,0 +1,70 @@
+/* 2c. What the miniature shows of the settings */
+
+/* Settings the miniature honours. Every one is a surface the panel can actually show. */
+
+.cv-fi {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+
+.cv-arrow {
+  display: inline-block;
+  width: 8px;
+  font-size: 8px;
+  opacity: 0.7;
+}
+
+/* Only the scopes the build actually italicises, not every span in the sample. */
+.cv-italics .cv-em {
+  font-style: italic;
+}
+
+.cv-line-outline .cv-line-on {
+  box-shadow: inset 0 0 0 1px var(--r-border);
+}
+
+.cv-line-solid .cv-line-on {
+  background: var(--r-surfaceAlt);
+}
+
+.cv-indicator-bottom .cv-tab-on {
+  border-bottom-color: var(--r-accent);
+}
+
+.cv-indicator-top .cv-tab-on {
+  border-top-color: var(--r-accent);
+}
+
+.cv-tabbar-contrasted .cv-tabs {
+  background: var(--r-chrome);
+}
+
+.cv-borders-subtle .cv-side,
+.cv-borders-subtle .cv-chat {
+  border-color: var(--r-border);
+}
+
+.cv-borders-subtle .cv-terminal {
+  border-top-color: var(--r-border);
+}
+
+.cv-borders-strong .cv-side,
+.cv-borders-strong .cv-chat {
+  border-color: var(--r-fgSubtle);
+}
+
+.cv-borders-strong .cv-terminal {
+  border-top-color: var(--r-fgSubtle);
+}
+
+.cv-accented-status .cv-status {
+  background: var(--r-accent);
+}
+
+.cv-shadows .cv-terminal,
+.cv-shadows .cv-chat {
+  box-shadow: 0 -3px 8px rgb(0 0 0 / 28%);
+}

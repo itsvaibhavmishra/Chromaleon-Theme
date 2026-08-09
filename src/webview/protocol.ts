@@ -1,6 +1,8 @@
 // The contract between the extension host and the panel. Both sides import this file, so a
 // message shape cannot drift on one side without the other failing to compile.
 
+import type { PortablePreset } from '@/utils/preset-file'
+
 /** Sent by the host, handled in the webview. */
 export type ToWebview =
   | { type: 'state'; state: PanelState }
@@ -23,6 +25,8 @@ export type ToHost =
   // A setting is not a theme edit, so it lands immediately rather than behind Save, which is
   // what VS Code's own settings editor does and what people expect of a checkbox.
   | { type: 'setSetting'; key: string; value: string | boolean }
+  | { type: 'importPresets'; presets: PortablePreset[] }
+  | { type: 'exportPresets'; presets: PortablePreset[] }
 
 export type RoleGroup = 'Surfaces' | 'Foregrounds' | 'Accent' | 'Hue ramp' | 'Fixed'
 
@@ -102,4 +106,6 @@ export interface PresetView {
   name: string
   base: string
   overrides: Record<string, string>
+  created?: string
+  updated?: string
 }

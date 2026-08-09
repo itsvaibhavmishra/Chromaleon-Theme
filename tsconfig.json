@@ -5,7 +5,8 @@
     "moduleResolution": "bundler",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "#test/*": ["test/*"]
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["node"],

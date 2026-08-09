@@ -6,6 +6,7 @@ import { NS } from '@/config/extension'
 
 import { resolveAccent } from '@/core/accents'
 import { treeIcons } from '@/extension/icon-preview'
+import { type PortablePreset, writePresetFile } from '@/utils/preset-file'
 import { CONCEPTS } from '@/core/roles'
 import { RUNTIME } from '@/generated'
 import type {
@@ -22,11 +23,28 @@ import {
   deletePreset,
   readSettings,
   renamePreset,
+  importPresets,
   savePreset,
   writeSetting,
 } from '@/extension/settings'
 
 const VIEW_TYPE = 'chromaleon.customizer'
+
+// Where a preset goes is the user's call, so this asks rather than picking a folder for them.
+async function savePresetFile(presets: PortablePreset[]): Promise<void> {
+  if (presets.length === 0) return
+  const suggested = presets.length === 1 ? presets[0].name : 'chromaleon-presets'
+  const target = await vscode.window.showSaveDialog({
+    filters: { 'Chromaleon preset': ['json'] },
+    saveLabel: 'Export',
+    defaultUri: vscode.Uri.file(`${suggested.replace(/[^\w. -]/g, '')}.json`),
+  })
+  if (!target) return
+  await vscode.workspace.fs.writeFile(target, Buffer.from(writePresetFile(presets), 'utf8'))
+  vscode.window.showInformationMessage(
+    `${RUNTIME.brand}: exported ${presets.length === 1 ? presets[0].name : `${presets.length} presets`}.`,
+  )
+}
 
 // One panel at a time. A second copy would fight the first over the same settings.
 let current: vscode.WebviewPanel | undefined
@@ -163,6 +181,10 @@ function wire(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): voi
         void renamePreset(message.preset, message.name)
       } else if (message.type === 'setSetting') {
         void writeSetting(message.key, message.value)
+      } else if (message.type === 'importPresets') {
+        void importPresets(message.presets)
+      } else if (message.type === 'exportPresets') {
+        void savePresetFile(message.presets)
       } else if (message.type === 'deletePreset') {
         void deletePreset(message.preset)
       }

@@ -295,6 +295,30 @@ module.exports = async function customizer() {
       opened.written.slice(-4).join(', ') || 'nothing written',
     )
 
+    // Import writes new presets rather than merging over a name that matches: two people can
+    // call a preset the same thing and mean different colours.
+    await opened.send({
+      type: 'importPresets',
+      presets: [
+        { name: 'Brought', base: 'Chromaleon Chalk', overrides: { bg: '#010203' } },
+        { name: 'Brought', base: 'Chromaleon Chalk', overrides: {} },
+      ],
+    })
+    const imported = opened.written.filter((entry) => entry.includes('chromaleon.presets=')).at(-1)
+    const landed = JSON.parse(imported.slice(imported.indexOf('=') + 1))
+    check('importing writes one preset per entry', Object.keys(landed).length, 2)
+    checkThat(
+      'and a repeated name is a second preset, not a merge',
+      Object.values(landed).every((preset) => preset.name === 'Brought') &&
+        new Set(Object.keys(landed)).size === 2,
+      imported,
+    )
+    checkThat(
+      'and stamps what it wrote',
+      /"created":"\d{4}-\d{2}-\d{2}T/.test(imported) && imported.includes('"updated":"'),
+      imported ?? 'nothing written',
+    )
+
     await opened.send({ type: 'setSetting', key: 'selectionStyle', value: 'accent' })
     checkThat(
       'and an enum lands the same way',

@@ -163,6 +163,10 @@ export function SettingsPane({
 
   return (
     <div class="settings-pane">
+      <p class="settings-note">
+        These are your VS Code settings. Every change here is written straight away, so there is
+        nothing to save. Colours are the ones that wait behind Save, over on the Colours tab.
+      </p>
       <div class="settings-grid">
         {sections.map((section) => {
           const inSection = section.keys

@@ -154,13 +154,6 @@ export function Overflow() {
       </button>
       {open && (
         <div class="menu menu-small">
-          <button class="menu-item" disabled>
-            Import theme file
-          </button>
-          <button class="menu-item" disabled>
-            Export current theme
-          </button>
-          <hr />
           <button
             class="menu-item"
             onClick={() => {

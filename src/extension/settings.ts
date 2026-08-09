@@ -3,6 +3,7 @@ import * as vscode from 'vscode'
 import { THEME_DEFAULT } from '@/core/accents'
 import { NS } from '@/config/extension'
 import { RUNTIME } from '@/generated'
+import type { PortablePreset } from '@/utils/preset-file'
 import { sameValue } from '@/utils/same-value'
 
 export type SelectionStyle = 'room' | 'accent'
@@ -42,6 +43,9 @@ export interface Preset {
   /** The shipped theme it was taken from. Overrides only apply while that theme is active. */
   base: string
   overrides: Record<string, string>
+  // ISO 8601, and absent on presets made before the panel recorded them.
+  created?: string
+  updated?: string
 }
 
 // Defaults are duplicated in package.json's configuration block; both are asserted equal by
@@ -107,7 +111,14 @@ export async function savePreset(
   const existing = presets[target]
   const name = existing?.name ?? nextId(presets).name
 
-  presets[target] = { name, base: existing?.base ?? base, overrides }
+  const now = new Date().toISOString()
+  presets[target] = {
+    name,
+    base: existing?.base ?? base,
+    overrides,
+    created: existing?.created ?? now,
+    updated: now,
+  }
   await write('presets', presets)
   return target
 }
@@ -142,6 +153,28 @@ export async function renamePreset(id: string, name: string): Promise<void> {
   if (!presets[id] || !name.trim()) return
   presets[id] = { ...presets[id], name: name.trim() }
   await write('presets', presets)
+}
+
+// Imported presets are always new rather than merged over a name that matches: two people
+// can call a preset the same thing and mean different colours.
+export async function importPresets(incoming: PortablePreset[]): Promise<string[]> {
+  const presets = { ...(globalValue('presets') ?? {}) }
+  const now = new Date().toISOString()
+  const added: string[] = []
+
+  for (const preset of incoming) {
+    const { id } = nextId(presets)
+    presets[id] = {
+      name: preset.name,
+      base: preset.base,
+      overrides: preset.overrides,
+      created: preset.created ?? now,
+      updated: now,
+    }
+    added.push(id)
+  }
+  await write('presets', presets)
+  return added
 }
 
 /** Removes a preset, and switches it off wherever it was in use. */

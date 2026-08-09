@@ -3,19 +3,39 @@ import { render } from 'preact'
 import '@/webview/style.css'
 import { useEffect, useState } from 'preact/hooks'
 
-import { Arrow } from '@/components/arrow'
 import { Confirm } from '@/components/confirm'
-import { Overflow, ThemePicker } from '@/components/menus'
+import { ContextBar } from '@/components/context-bar'
+import { ImportReview } from '@/components/import-review'
 import { Resizer } from '@/components/resizer'
 import { RoleDetail } from '@/components/role-detail'
 import { RoleList } from '@/components/role-list'
+import { PresetsPane } from '@/components/presets-pane'
 import { SettingsPane } from '@/components/settings-pane'
 import { CANVAS_DEFAULT, KEEPS_SELECTION, type Tab, TABS } from '@/constants/panel'
 import { Canvas, type CanvasSettings } from '@/webview/canvas'
 import { clampCanvas, persist, post, restored } from '@/webview/host'
-import { canRedo, canUndo, record, redo, started, undo } from '@/utils/history'
+import { record, redo, started, undo } from '@/utils/history'
+import {
+  type PortablePreset,
+  presetSignature,
+  readPresetFile,
+  type ReadResult,
+} from '@/utils/preset-file'
 import { type Compare, derive, shortName } from '@/webview/model'
 import type { PanelState, ToWebview } from '@/webview/protocol'
+
+// Reading happens here rather than in the pane so the pane stays a view of a decided result.
+async function readDropped(files: File[], bases: string[]): Promise<ReadResult[]> {
+  return Promise.all(files.map(async (file) => readPresetFile(file.name, await file.text(), bases)))
+}
+
+const portable = (state: PanelState, id: string): PortablePreset => ({
+  name: state.presets[id].name,
+  base: state.presets[id].base,
+  overrides: state.presets[id].overrides,
+  created: state.presets[id].created,
+  updated: state.presets[id].updated,
+})
 
 function App() {
   // Seeded from the webview's own persisted state so a reload paints immediately rather
@@ -41,6 +61,9 @@ function App() {
   // The preset the confirmation dialog is asking about. Held here rather than in the picker,
   // which closes the moment the dialog opens.
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [picked, setPicked] = useState<Set<string>>(new Set())
+  const [dropped, setDropped] = useState<ReadResult[] | null>(null)
+  const [purging, setPurging] = useState<string[] | null>(null)
   const [canvasHeight, setCanvasHeight] = useState(restored().canvasHeight ?? CANVAS_DEFAULT)
 
   useEffect(() => {
@@ -97,8 +120,7 @@ function App() {
   // A preset id or a shipped theme label. Follows VS Code until you pick something here, and
   // never the other way round: switching in the panel must not restyle the editor.
   const view = derive(state, editing, draft, compare)
-  const { viewing, base, label, edits, roles, unsaved, changed, previewing, measured, failing } =
-    view
+  const { viewing, base, edits, roles, measured, failing, previewing } = view
   const viewingPreset = view.preset
 
   const setRole = (role: string, value: string | null) => {
@@ -113,6 +135,7 @@ function App() {
     post({ type: 'save', base, preset: viewingPreset ? viewing : null, overrides: edits })
 
   const activeRole = roles.find((role) => role.id === selected) ?? null
+  const bases = state.themes.map((theme) => theme.label)
 
   // The miniature answers "what will this look like", so the settings that change surfaces
   // belong in it as much as the colours do.
@@ -130,110 +153,22 @@ function App() {
 
   return (
     <div class="app">
-      <header class="context">
-        <div class="context-actions">
-          <button onClick={save} disabled={!unsaved}>
-            {viewingPreset ? 'Save' : 'Save as preset'}
-          </button>
-
-          {/* Staged like any other edit, so it needs saving. Writing straight through would
-              be the one destructive action in the panel that skipped the draft. */}
-          <button onClick={() => setDraft({})} disabled={changed === 0}>
-            Reset all
-          </button>
-          <button
-            onPointerDown={() => setCompare({ base: true })}
-            onPointerUp={() => setCompare(null)}
-            onPointerLeave={() => setCompare(null)}
-            disabled={changed === 0}
-          >
-            Hold to compare
-          </button>
-
-          <span class="context-history">
-            <button
-              class="icon-button"
-              title="Undo"
-              aria-label="Undo"
-              disabled={!canUndo(drafts)}
-              onClick={() => setDrafts(undo(drafts))}
-            >
-              <Arrow />
-            </button>
-            <button
-              class="icon-button"
-              title="Redo"
-              aria-label="Redo"
-              disabled={!canRedo(drafts)}
-              onClick={() => setDrafts(redo(drafts))}
-            >
-              <Arrow forward />
-            </button>
-          </span>
-          <Overflow />
-        </div>
-
-        <div class="context-theme">
-          {!viewingPreset && <span class="badge">READ ONLY</span>}
-          {unsaved && <span class="badge badge-unsaved">UNSAVED</span>}
-          {!unsaved && viewingPreset && (
-            <span class={changed > 0 ? 'badge badge-edited' : 'badge'}>
-              {changed > 0 ? `CHANGED · ${changed}` : 'UNMODIFIED'}
-            </span>
-          )}
-          {previewing && <span class="badge badge-preview">PREVIEW ONLY</span>}
-          {previewing && (
-            <button
-              class="apply"
-              onClick={() =>
-                post({ type: 'applyTheme', base, preset: viewingPreset ? viewing : null })
-              }
-              disabled={unsaved}
-              title={unsaved ? 'Save first' : undefined}
-            >
-              Apply theme
-            </button>
-          )}
-          {renaming === null ? (
-            <ThemePicker
-              state={state}
-              viewing={viewing}
-              label={label}
-              onPick={(id) => {
-                setDraft(null)
-                setEditing(id)
-              }}
-              onCompare={(id, held) => setCompare(held ? { id } : null)}
-              onRename={(id) => setRenaming({ preset: id, name: state.presets[id]?.name ?? '' })}
-              onDelete={setDeleting}
-            />
-          ) : (
-            <input
-              class="rename"
-              value={renaming.name}
-              ref={(el) => {
-                el?.focus()
-              }}
-              aria-label="Preset name"
-              onInput={(event) =>
-                setRenaming({ ...renaming, name: (event.target as HTMLInputElement).value })
-              }
-              onBlur={() => {
-                const name = renaming.name.trim()
-                if (name) post({ type: 'renamePreset', preset: renaming.preset, name })
-                setRenaming(null)
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') (event.target as HTMLInputElement).blur()
-                else if (event.key === 'Escape') {
-                  setRenaming(null)
-                  ;(event.target as HTMLInputElement).blur()
-                }
-              }}
-            />
-          )}
-        </div>
-      </header>
+      <ContextBar
+        state={state}
+        view={view}
+        drafts={drafts}
+        renaming={renaming}
+        onSave={save}
+        onDraft={setDraft}
+        onDrafts={setDrafts}
+        onCompare={setCompare}
+        onPick={(id) => {
+          setDraft(null)
+          setEditing(id)
+        }}
+        onRenaming={setRenaming}
+        onDelete={setDeleting}
+      />
 
       <section
         class={collapsed ? 'canvas-region collapsed' : 'canvas-region'}
@@ -326,19 +261,33 @@ function App() {
               )}
             </div>
           </>
-        ) : tab === 'Settings' ? (
+        ) : tab === 'Presets' ? (
+          <PresetsPane
+            state={state}
+            selected={picked}
+            onSelect={setPicked}
+            onEdit={(id) => {
+              setDraft(null)
+              setEditing(id)
+              setTab('Colours')
+            }}
+            onApply={(id) => post({ type: 'applyTheme', base: state.presets[id].base, preset: id })}
+            onDelete={setPurging}
+            onExport={(ids) =>
+              post({ type: 'exportPresets', presets: ids.map((id) => portable(state, id)) })
+            }
+            onCompare={(id, held) => setCompare(held ? { id } : null)}
+            onDrop={(files) => {
+              void readDropped(files, bases).then(setDropped)
+            }}
+          />
+        ) : (
           <SettingsPane
             settings={state.settings}
             values={state.settingValues}
             themeAccent={view.palette.accent ?? ''}
             onChange={(key, value) => post({ type: 'setSetting', key, value })}
           />
-        ) : (
-          <div class="empty">
-            <div class="empty-box" />
-            <h3>{tab}</h3>
-            <p>Not built yet. The shape is settled, the controls come next.</p>
-          </div>
         )}
       </main>
 
@@ -363,6 +312,35 @@ function App() {
             </span>
           ))}
       </footer>
+
+      {dropped && (
+        <ImportReview
+          read={dropped}
+          existing={new Set(Object.values(state.presets).map(presetSignature))}
+          onCancel={() => setDropped(null)}
+          onConfirm={(chosen) => {
+            const presets = chosen.map(
+              ({ file, index }) => dropped.find((result) => result.file === file)!.presets[index],
+            )
+            post({ type: 'importPresets', presets })
+            setDropped(null)
+          }}
+        />
+      )}
+
+      {purging && purging.length > 0 && (
+        <Confirm
+          title={purging.length === 1 ? 'Delete this preset?' : `Delete ${purging.length} presets?`}
+          body="Their colours go with them. The themes they were made from are untouched."
+          confirm={purging.length === 1 ? 'Delete preset' : `Delete ${purging.length}`}
+          onCancel={() => setPurging(null)}
+          onConfirm={() => {
+            for (const id of purging) post({ type: 'deletePreset', preset: id })
+            setPicked(new Set())
+            setPurging(null)
+          }}
+        />
+      )}
 
       {deleting && state.presets[deleting] && (
         <Confirm

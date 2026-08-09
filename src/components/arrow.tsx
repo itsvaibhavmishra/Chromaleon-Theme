@@ -1,5 +1,5 @@
-// The undo and redo glyphs. Entities like U+21BA render at whatever weight the system font
-// has and sat far too light beside the text buttons.
+// A U-turn arrow: it reads as "go back a step" rather than "go to the previous thing", which
+// is what a plain left arrow says and is not what undo does.
 export function Arrow({ forward }: { forward?: boolean }) {
   return (
     <svg
@@ -12,8 +12,8 @@ export function Arrow({ forward }: { forward?: boolean }) {
       stroke-linejoin="round"
       style={forward ? { transform: 'scaleX(-1)' } : undefined}
     >
-      <path d="M6.5 4.5L3 8l3.5 3.5" />
-      <path d="M3 8h6.2a3.8 3.8 0 010 7.6H8" transform="translate(0 -3.6)" />
+      <path d="M5.7 2.5L2.5 5.5l3.2 3" />
+      <path d="M2.5 5.5h6.9a3.1 3.1 0 010 6.2H5.4" />
     </svg>
   )
 }
