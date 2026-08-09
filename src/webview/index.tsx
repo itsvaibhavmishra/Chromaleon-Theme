@@ -29,9 +29,10 @@ function App() {
   // saved one, so a draft can remove a saved colour as well as add one.
   const [draft, setDraft] = useState<Record<string, string> | null>(null)
   const [compare, setCompare] = useState<Compare | null>(null)
-  // Null when not renaming. A name is a label rather than appearance, so it lands as soon as
-  // it is committed instead of waiting behind Save with the colours.
-  const [renaming, setRenaming] = useState<string | null>(null)
+  // A name is a label rather than appearance, so it lands on commit instead of waiting behind
+  // Save. The id travels with it: posting against whatever the panel happened to be viewing
+  // renamed the wrong preset whenever the row menu was opened on another one.
+  const [renaming, setRenaming] = useState<{ preset: string; name: string } | null>(null)
   // The preset the confirmation dialog is asking about. Held here rather than in the picker,
   // which closes the moment the dialog opens.
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -157,20 +158,23 @@ function App() {
                 setEditing(id)
               }}
               onCompare={(id, held) => setCompare(held ? { id } : null)}
-              onRename={(id) => setRenaming(state.presets[id]?.name ?? '')}
+              onRename={(id) => setRenaming({ preset: id, name: state.presets[id]?.name ?? '' })}
               onDelete={setDeleting}
             />
           ) : (
             <input
               class="rename"
-              value={renaming}
+              value={renaming.name}
               ref={(el) => {
                 el?.focus()
               }}
               aria-label="Preset name"
-              onInput={(event) => setRenaming((event.target as HTMLInputElement).value)}
+              onInput={(event) =>
+                setRenaming({ ...renaming, name: (event.target as HTMLInputElement).value })
+              }
               onBlur={() => {
-                if (renaming.trim()) post({ type: 'renamePreset', preset: viewing, name: renaming })
+                const name = renaming.name.trim()
+                if (name) post({ type: 'renamePreset', preset: renaming.preset, name })
                 setRenaming(null)
               }}
               onKeyDown={(event) => {

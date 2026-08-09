@@ -3,6 +3,7 @@ import { useState } from 'preact/hooks'
 import { Chevron } from '@/components/chevron'
 import { Row, RowActions } from '@/components/picker-row'
 import { Swatch } from '@/components/swatch'
+import { useCloseOnOutside } from '@/hooks/use-close-on-outside'
 import { useDismiss } from '@/hooks/use-dismiss'
 import { post } from '@/webview/host'
 import { HIGH_CONTRAST, paletteFor, shortName } from '@/webview/model'
@@ -34,6 +35,8 @@ export function ThemePicker({
     setActions(null)
   }
   const ref = useDismiss(open, close)
+  // The dots keep toggling, so its own trigger counts as inside.
+  useCloseOnOutside(actions !== null, () => setActions(null), '.row-menu, .row-more')
   const mine = Object.entries(state.presets)
   // The background, for the button and every row alike: it is what tells two themes apart at
   // a glance. Read from saved presets, so it moves on save rather than mid-edit.
