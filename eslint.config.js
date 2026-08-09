@@ -10,10 +10,11 @@ export default tseslint.config(
 
   js.configs.recommended,
 
-  // Type-aware linting is scoped to src: it needs a tsconfig project, and neither the flat
-  // config nor the CommonJS test harness is in one.
+  // Type-aware linting needs a tsconfig project, so it reaches exactly what tsconfig includes:
+  // src and the TypeScript tests. The flat config and the CommonJS harness are in neither.
+  // test/panel.ts sat outside both for a while, and a wrong-typed argument survived in it.
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}', 'test/**/*.ts'],
     extends: [...tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },

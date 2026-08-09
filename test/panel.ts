@@ -213,7 +213,7 @@ console.log('\npreviewing')
   // A preset on the active theme that is not the one switched on is still only a preview.
   check(
     'one that is not switched on is',
-    derive(withPreset({}, null), 'p1', null, false).previewing,
+    derive(withPreset({}, false), 'p1', null, null).previewing,
     true,
   )
 }
