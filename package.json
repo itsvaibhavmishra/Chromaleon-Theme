@@ -3,7 +3,6 @@
   "displayName": "Chromaleon Theme",
   "description": "The last colour theme you need. 22 themes to start from, then edit any colour against a live preview and make one that is truly yours. Matching file icons included.",
   "version": "0.1.0",
-  "// publisher": "TODO: replace with a real marketplace publisher id before publishing",
   "publisher": "itsvaibhavmishra",
   "license": "MIT",
   "icon": "icon.png",
@@ -19,7 +18,6 @@
     "url": "https://github.com/itsvaibhavmishra/Chromaleon-Theme/issues"
   },
   "homepage": "https://github.com/itsvaibhavmishra/Chromaleon-Theme#readme",
-  "private": true,
   "type": "module",
   "engines": {
     "vscode": ">=1.102.0"
@@ -83,7 +81,8 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "check:package": "tsx src/scripts/package-contents.ts",
-    "check:history": "tsx src/scripts/check-history.ts"
+    "check:history": "tsx src/scripts/check-history.ts",
+    "release": "tsx src/scripts/release.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

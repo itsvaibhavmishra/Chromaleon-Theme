@@ -11,11 +11,16 @@
 #   Internal     refactors and housekeeping nobody outside would notice
 
   - New:
+    - Tagging main publishes a GitHub release with the vsix attached and the changelog as its notes.
+    - Every push to staging publishes a pre-release build, so there is always an installable copy of what is coming.
 
   - Improvements:
 
   - Fixed:
+    - The manifest no longer marks itself private, which would have refused to publish.
 
   - Developers:
 
   - Internal:
+    - `npm run release <x.y.z>` moves the devlog into the changelog and bumps the version, so the two cannot disagree.
+    - The README version badge reads the latest release rather than being edited by hand.
