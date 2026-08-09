@@ -67,6 +67,10 @@ export function resolve(
   })
 }
 
+// Two different questions. The context bar asks what this theme looked like before you touched
+// it; a row asks what that other preset or shipped theme looks like instead of this one.
+export type Compare = { base: true } | { id: string }
+
 export interface View {
   /** A preset id or a shipped theme label. */
   viewing: string
@@ -89,11 +93,27 @@ export interface View {
   failing: number
 }
 
+// Only the canvas ever shows a comparison. Letting it reach the edits would make Save write
+// whatever was being compared against, and drop the dirty count while the button is held.
+function canvasFor(
+  state: PanelState,
+  compare: Compare | null,
+  palette: Record<string, string>,
+  accent: string,
+  edits: Record<string, string>,
+): Record<string, string> {
+  if (!compare) return { ...palette, accent, ...edits }
+  if ('base' in compare) return { ...palette, accent }
+
+  const other = paletteFor(state, compare.id)
+  return { ...other, accent: state.accentOverride ?? other.accent }
+}
+
 export function derive(
   state: PanelState,
   editing: string | null,
   draft: Record<string, string> | null,
-  comparing: boolean,
+  compare: Compare | null,
 ): View {
   const fallback = state.active ?? state.themes[0].label
   const suggested = state.active ? (state.activePresets[state.active] ?? state.active) : fallback
@@ -123,7 +143,7 @@ export function derive(
     palette,
     accent,
     edits,
-    canvas: { ...palette, accent, ...(comparing ? {} : edits) },
+    canvas: canvasFor(state, compare, palette, accent, edits),
     roles,
     unsaved: draft !== null && !same(draft, saved),
     changed: Object.keys(edits).length,

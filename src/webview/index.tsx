@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact'
 import { render } from 'preact'
 
 import '@/webview/style.css'
@@ -6,6 +7,7 @@ import { useEffect, useRef, useState } from 'preact/hooks'
 import { hsl, toHsl } from '@/core/color'
 import { Canvas } from '@/webview/canvas'
 import {
+  type Compare,
   conceptFor,
   derive,
   HEX,
@@ -52,7 +54,7 @@ const clampCanvas = (height: number) =>
 
 // Regions that own a click; anywhere else clears the selection. The detail pane is here
 // because it is the selection, and the resizer because a drag ends in a click.
-const KEEPS_SELECTION = '.canvas, .list-pane, .detail, .resizer, .menu, button, input'
+const KEEPS_SELECTION = '.canvas, .list-pane, .detail, .resizer, .menu, .row-menu, button, input'
 
 const GROUPS: RoleGroup[] = ['Surfaces', 'Foregrounds', 'Accent', 'Hue ramp', 'Fixed']
 const TABS = ['Colours', 'Settings', 'Presets'] as const
@@ -91,19 +93,149 @@ function useDismiss(open: boolean, close: () => void) {
   return ref
 }
 
+// Placed by the picker rather than by the row, so it floats over the list instead of pushing it.
+function RowActions({
+  top,
+  right,
+  onCompare,
+  onRename,
+  onDelete,
+}: {
+  top: number
+  right: number
+  onCompare: (held: boolean) => void
+  onRename?: () => void
+  onDelete?: () => void
+}) {
+  return (
+    <div class="row-menu" style={{ top: `${top}px`, right: `${right}px` }}>
+      <button
+        onPointerDown={() => onCompare(true)}
+        onPointerUp={() => onCompare(false)}
+        onPointerLeave={() => onCompare(false)}
+      >
+        Hold to compare
+      </button>
+      {onRename && <button onClick={onRename}>Rename</button>}
+      {onDelete && (
+        <>
+          <hr />
+          <button class="danger" onClick={onDelete}>
+            Delete
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+// One row for both columns. The highlight lives on the line rather than the naming button, so
+// the dots sit inside it instead of alongside.
+function Row({
+  selected,
+  expanded,
+  onPick,
+  onToggle,
+  children,
+}: {
+  selected: boolean
+  expanded: boolean
+  onPick: () => void
+  onToggle: (anchor: HTMLElement) => void
+  children: ComponentChildren
+}) {
+  return (
+    <div class={selected ? 'row-line on' : 'row-line'}>
+      <button class="menu-item" onClick={onPick}>
+        {children}
+      </button>
+      <button
+        class="row-more"
+        title="More actions"
+        aria-expanded={expanded}
+        onClick={(event) => onToggle(event.currentTarget)}
+      >
+        &#8943;
+      </button>
+    </div>
+  )
+}
+
+// The one action Reset all cannot walk back, so it asks before a stray click has already done it.
+function Confirm({
+  title,
+  body,
+  confirm,
+  onConfirm,
+  onCancel,
+}: {
+  title: string
+  body: string
+  confirm: string
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  const cancel = useRef<HTMLButtonElement>(null)
+
+  // Focus lands on Cancel, so Enter on a dialog nobody read does the harmless thing.
+  useEffect(() => {
+    cancel.current?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCancel()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onCancel])
+
+  return (
+    <div class="scrim" onClick={onCancel}>
+      <div
+        class="dialog"
+        role="alertdialog"
+        aria-label={title}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2>{title}</h2>
+        <p class="muted">{body}</p>
+        <div class="dialog-actions">
+          <button ref={cancel} onClick={onCancel}>
+            Cancel
+          </button>
+          <button class="danger" onClick={onConfirm}>
+            {confirm}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ThemePicker({
   state,
   viewing,
   label,
   onPick,
+  onCompare,
+  onRename,
+  onDelete,
 }: {
   state: PanelState
   viewing: string
   label: string
   onPick: (id: string) => void
+  onCompare: (id: string, held: boolean) => void
+  onRename: (id: string) => void
+  onDelete: (id: string) => void
 }) {
   const [open, setOpen] = useState(false)
-  const ref = useDismiss(open, () => setOpen(false))
+  // Measured off the dots and held here rather than rendered inside the row: the columns scroll,
+  // and anything positioned inside that overflow is clipped instead of floating over the list.
+  const [actions, setActions] = useState<{ id: string; top: number; right: number } | null>(null)
+  const close = () => {
+    setOpen(false)
+    setActions(null)
+  }
+  const ref = useDismiss(open, close)
   const mine = Object.entries(state.presets)
   // The background, for the button and every row alike: it is what tells two themes apart at
   // a glance. Read from saved presets, so it moves on save rather than mid-edit.
@@ -111,12 +243,32 @@ function ThemePicker({
 
   const choose = (id: string) => {
     onPick(id)
-    setOpen(false)
+    close()
+  }
+
+  // A shipped theme is not ours to rename or delete, so it simply gets no such item.
+  const ours = (id: string, act: () => void) =>
+    state.presets[id]
+      ? () => {
+          act()
+          close()
+        }
+      : undefined
+
+  const toggle = (id: string, anchor: HTMLElement) => {
+    if (actions?.id === id || !ref.current) return setActions(null)
+    const dots = anchor.getBoundingClientRect()
+    const frame = ref.current.getBoundingClientRect()
+    setActions({ id, top: dots.bottom - frame.top + 2, right: frame.right - dots.right })
   }
 
   return (
     <div class="picker" ref={ref}>
-      <button class="picker-button" onClick={() => setOpen(!open)} aria-expanded={open}>
+      <button
+        class="picker-button"
+        onClick={() => (open ? close() : setOpen(true))}
+        aria-expanded={open}
+      >
         <Swatch value={swatch(viewing)} />
         <span>{label}</span>
         <Chevron />
@@ -128,12 +280,15 @@ function ThemePicker({
           {mine.length > 0 && (
             <div class="menu-col">
               <h3>Yours</h3>
-              <div class="menu-scroll">
+              {/* Scrolling would leave a menu measured against the old position behind. */}
+              <div class="menu-scroll" onScroll={() => setActions(null)}>
                 {mine.map(([id, preset]) => (
-                  <button
+                  <Row
                     key={id}
-                    class={id === viewing ? 'menu-item on' : 'menu-item'}
-                    onClick={() => choose(id)}
+                    selected={id === viewing}
+                    expanded={actions?.id === id}
+                    onPick={() => choose(id)}
+                    onToggle={(anchor) => toggle(id, anchor)}
                   >
                     <Swatch value={swatch(id)} />
                     <span class="menu-name">
@@ -143,7 +298,7 @@ function ThemePicker({
                     {state.activePresets[preset.base] === id && preset.base === state.active && (
                       <span class="tag">In VS Code</span>
                     )}
-                  </button>
+                  </Row>
                 ))}
               </div>
             </div>
@@ -151,12 +306,14 @@ function ThemePicker({
 
           <div class="menu-col">
             <h3>Shipped</h3>
-            <div class="menu-scroll">
+            <div class="menu-scroll" onScroll={() => setActions(null)}>
               {state.themes.map((theme) => (
-                <button
+                <Row
                   key={theme.label}
-                  class={theme.label === viewing ? 'menu-item on' : 'menu-item'}
-                  onClick={() => choose(theme.label)}
+                  selected={theme.label === viewing}
+                  expanded={actions?.id === theme.label}
+                  onPick={() => choose(theme.label)}
+                  onToggle={(anchor) => toggle(theme.label, anchor)}
                 >
                   <Swatch value={swatch(theme.label)} />
                   <span class="menu-name">
@@ -166,11 +323,21 @@ function ThemePicker({
                   {theme.label === state.active && !state.activePresets[theme.label] && (
                     <span class="tag">In VS Code</span>
                   )}
-                </button>
+                </Row>
               ))}
             </div>
           </div>
         </div>
+      )}
+
+      {open && actions && (
+        <RowActions
+          top={actions.top}
+          right={actions.right}
+          onCompare={(held) => onCompare(actions.id, held)}
+          onRename={ours(actions.id, () => onRename(actions.id))}
+          onDelete={ours(actions.id, () => onDelete(actions.id))}
+        />
       )}
     </div>
   )
@@ -565,7 +732,13 @@ function App() {
   // Null means untouched; once set it is the complete override set, not a layer over the
   // saved one, so a draft can remove a saved colour as well as add one.
   const [draft, setDraft] = useState<Record<string, string> | null>(null)
-  const [comparing, setComparing] = useState(false)
+  const [compare, setCompare] = useState<Compare | null>(null)
+  // Null when not renaming. A name is a label rather than appearance, so it lands as soon as
+  // it is committed instead of waiting behind Save with the colours.
+  const [renaming, setRenaming] = useState<string | null>(null)
+  // The preset the confirmation dialog is asking about. Held here rather than in the picker,
+  // which closes the moment the dialog opens.
+  const [deleting, setDeleting] = useState<string | null>(null)
   const [canvasHeight, setCanvasHeight] = useState(
     vscode.getState()?.canvasHeight ?? CANVAS_DEFAULT,
   )
@@ -617,7 +790,7 @@ function App() {
 
   // A preset id or a shipped theme label. Follows VS Code until you pick something here, and
   // never the other way round: switching in the panel must not restyle the editor.
-  const view = derive(state, editing, draft, comparing)
+  const view = derive(state, editing, draft, compare)
   const { viewing, base, label, edits, roles, unsaved, changed, previewing, measured, failing } =
     view
   const viewingPreset = view.preset
@@ -642,21 +815,16 @@ function App() {
           <button onClick={save} disabled={!unsaved}>
             {viewingPreset ? 'Save' : 'Save as preset'}
           </button>
-          <button
-            onClick={() => viewingPreset && post({ type: 'deletePreset', preset: viewing })}
-            disabled={!viewingPreset}
-          >
-            Delete preset
-          </button>
+
           {/* Staged like any other edit, so it needs saving. Writing straight through would
               be the one destructive action in the panel that skipped the draft. */}
           <button onClick={() => setDraft({})} disabled={changed === 0}>
             Reset all
           </button>
           <button
-            onPointerDown={() => setComparing(true)}
-            onPointerUp={() => setComparing(false)}
-            onPointerLeave={() => setComparing(false)}
+            onPointerDown={() => setCompare({ base: true })}
+            onPointerUp={() => setCompare(null)}
+            onPointerLeave={() => setCompare(null)}
             disabled={changed === 0}
           >
             Hold to compare
@@ -685,15 +853,41 @@ function App() {
               Apply theme
             </button>
           )}
-          <ThemePicker
-            state={state}
-            viewing={viewing}
-            label={label}
-            onPick={(id) => {
-              setDraft(null)
-              setEditing(id)
-            }}
-          />
+          {renaming === null ? (
+            <ThemePicker
+              state={state}
+              viewing={viewing}
+              label={label}
+              onPick={(id) => {
+                setDraft(null)
+                setEditing(id)
+              }}
+              onCompare={(id, held) => setCompare(held ? { id } : null)}
+              onRename={(id) => setRenaming(state.presets[id]?.name ?? '')}
+              onDelete={setDeleting}
+            />
+          ) : (
+            <input
+              class="rename"
+              value={renaming}
+              ref={(el) => {
+                el?.focus()
+              }}
+              aria-label="Preset name"
+              onInput={(event) => setRenaming((event.target as HTMLInputElement).value)}
+              onBlur={() => {
+                if (renaming.trim()) post({ type: 'renamePreset', preset: viewing, name: renaming })
+                setRenaming(null)
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') (event.target as HTMLInputElement).blur()
+                else if (event.key === 'Escape') {
+                  setRenaming(null)
+                  ;(event.target as HTMLInputElement).blur()
+                }
+              }}
+            />
+          )}
         </div>
       </header>
 
@@ -815,6 +1009,24 @@ function App() {
             </span>
           ))}
       </footer>
+
+      {deleting && state.presets[deleting] && (
+        <Confirm
+          title={`Delete ${state.presets[deleting].name}?`}
+          body="Its colours go with it. The theme it was made from is untouched."
+          confirm="Delete preset"
+          onCancel={() => setDeleting(null)}
+          onConfirm={() => {
+            post({ type: 'deletePreset', preset: deleting })
+            // A draft staged against it would otherwise land on whatever the panel falls back to.
+            if (viewing === deleting) {
+              setEditing(null)
+              setDraft(null)
+            }
+            setDeleting(null)
+          }}
+        />
+      )}
     </div>
   )
 }

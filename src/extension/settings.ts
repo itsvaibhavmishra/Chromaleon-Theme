@@ -120,6 +120,15 @@ export async function applyTheme(base: string, id: string | null): Promise<void>
     .update('workbench.colorTheme', base, vscode.ConfigurationTarget.Global)
 }
 
+// Trimmed, and an empty name is refused rather than written: a preset with no name is
+// unpickable from a list that shows nothing else about it.
+export async function renamePreset(id: string, name: string): Promise<void> {
+  const presets = { ...(globalValue('presets') ?? {}) }
+  if (!presets[id] || !name.trim()) return
+  presets[id] = { ...presets[id], name: name.trim() }
+  await write('presets', presets)
+}
+
 /** Removes a preset, and switches it off wherever it was in use. */
 export async function deletePreset(id: string): Promise<void> {
   const presets = { ...(globalValue('presets') ?? {}) }

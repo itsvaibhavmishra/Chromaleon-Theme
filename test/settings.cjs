@@ -921,6 +921,32 @@ async function run(
       afterReset,
     )
 
+    // A name is a label, so it lands immediately. It must not touch the overrides beside it.
+    await opened.send({ type: 'renamePreset', preset: 'p1', name: '  Low glare  ' })
+    const renamed = opened.written.at(-1)
+    checkThat(
+      'renaming trims and keeps the overrides',
+      renamed.includes('"name":"Low glare"') && renamed.includes('"base":"Chromaleon Tyrian"'),
+      renamed,
+    )
+
+    // An unnamed preset is unpickable from a list that shows nothing else about it.
+    const beforeBlank = opened.written.length
+    await opened.send({ type: 'renamePreset', preset: 'p1', name: '   ' })
+    checkThat(
+      'an empty name is refused rather than written',
+      opened.written.length === beforeBlank,
+      opened.written.slice(beforeBlank).join(' | '),
+    )
+
+    const beforeGhost = opened.written.length
+    await opened.send({ type: 'renamePreset', preset: 'p99', name: 'Ghost' })
+    checkThat(
+      'and renaming a preset that is gone writes nothing',
+      opened.written.length === beforeGhost,
+      opened.written.slice(beforeGhost).join(' | '),
+    )
+
     await opened.send({ type: 'deletePreset', preset: 'p1' })
     const afterDelete = opened.written.slice(-2).join(' | ')
     checkThat(

@@ -12,6 +12,7 @@ import {
   deletePreset,
   NS,
   readSettings,
+  renamePreset,
   savePreset,
 } from '@/extension/settings'
 
@@ -109,6 +110,8 @@ function wire(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): voi
         })
       } else if (message.type === 'applyTheme') {
         void applyTheme(message.base, message.preset)
+      } else if (message.type === 'renamePreset') {
+        void renamePreset(message.preset, message.name)
       } else if (message.type === 'deletePreset') {
         void deletePreset(message.preset)
       }
