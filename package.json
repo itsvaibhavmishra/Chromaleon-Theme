@@ -283,7 +283,7 @@
             "Open in the active editor group."
           ],
           "default": "newWindow",
-          "markdownDescription": "Where **Open Customizer** puts the panel.",
+          "markdownDescription": "Where **Open Customizer** puts the panel. [Open the customizer](command:chromaleon.openCustomizer)",
           "order": 15
         },
         "chromaleon.presets": {
@@ -326,6 +326,51 @@
         "command": "chromaleon.reset",
         "title": "Reset All Settings",
         "category": "Chromaleon"
+      }
+    ],
+    "walkthroughs": [
+      {
+        "id": "chromaleon.getStarted",
+        "title": "Get started with Chromaleon",
+        "description": "Pick a background that suits the room, then shift the accent and tune anything else.",
+        "steps": [
+          {
+            "id": "chromaleon.step.customizer",
+            "title": "Open the customizer",
+            "description": "Edit any of the 29 colour roles and watch a miniature of the whole window follow.\n[Open Customizer](command:chromaleon.openCustomizer)",
+            "media": {
+              "image": "icon.png",
+              "altText": "The Chromaleon customizer"
+            },
+            "completionEvents": [
+              "onCommand:chromaleon.openCustomizer"
+            ]
+          },
+          {
+            "id": "chromaleon.step.variant",
+            "title": "Choose a variant",
+            "description": "Eleven variants, dark and light, each with a high contrast pair.\n[Choose a theme](command:workbench.action.selectTheme)",
+            "media": {
+              "image": "icon.png",
+              "altText": "Chromaleon variants"
+            },
+            "completionEvents": [
+              "onSettingChanged:workbench.colorTheme"
+            ]
+          },
+          {
+            "id": "chromaleon.step.accent",
+            "title": "Shift the accent",
+            "description": "One colour drives every active and selected surface, folder icons included.\n[Select an accent](command:chromaleon.selectAccent)",
+            "media": {
+              "image": "icon.png",
+              "altText": "Chromaleon accents"
+            },
+            "completionEvents": [
+              "onSettingChanged:chromaleon.accent"
+            ]
+          }
+        ]
       }
     ],
     "themes": [

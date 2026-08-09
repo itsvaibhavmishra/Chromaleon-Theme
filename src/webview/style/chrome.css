@@ -307,3 +307,18 @@
 .dialog-actions .danger:hover {
   background: var(--danger-hover);
 }
+
+/* Undo and redo sit apart from the actions they replay, so they read as navigation. */
+.context-history {
+  display: flex;
+  gap: 2px;
+  margin-left: 2px;
+  padding-left: 8px;
+  border-left: var(--line);
+}
+
+.context-history .arrow {
+  width: 15px;
+  height: 15px;
+  display: block;
+}

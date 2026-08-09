@@ -8,5 +8,6 @@
 @import '@/webview/style/tabs.css';
 @import '@/webview/style/split.css';
 @import '@/webview/style/detail.css';
+@import '@/webview/style/settings.css';
 @import '@/webview/style/status.css';
 @import '@/webview/style/narrow.css';

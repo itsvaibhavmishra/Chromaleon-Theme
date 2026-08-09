@@ -1,4 +1,12 @@
-const { ROOT, check, checkThat, baseStub, activateWith, run } = require('#test/harness.cjs')
+const {
+  ROOT,
+  MANIFEST,
+  check,
+  checkThat,
+  baseStub,
+  activateWith,
+  run,
+} = require('#test/harness.cjs')
 const fs = require('node:fs')
 const path = require('node:path')
 
@@ -60,7 +68,7 @@ module.exports = async function customizer() {
       const { withStub } = await activateWith(stub, {
         extensionPath: ROOT,
         extensionUri: { fsPath: ROOT },
-        extension: { packageJSON: { version: '0.0.0' } },
+        extension: { packageJSON: { version: '0.0.0', ...MANIFEST } },
         subscriptions: [],
         globalState: {
           get: (key, fallback) => fallback,
@@ -264,6 +272,34 @@ module.exports = async function customizer() {
       'and writes nothing itself',
       opened.written.length === before,
       opened.written.slice(before).join(', '),
+    )
+
+    // The settings tab drives every contributed setting through this one message.
+    const settings = state.settings.map((setting) => setting.key)
+    check('the panel is told every contributed setting', settings.length, 15)
+    checkThat(
+      'each one carries the control it needs',
+      state.settings.every(
+        (setting) =>
+          ['boolean', 'enum', 'text'].includes(setting.kind) &&
+          (setting.kind !== 'enum' || (setting.options?.length ?? 0) > 1),
+      ),
+      JSON.stringify(state.settings.find((setting) => !setting.kind)),
+    )
+    check('and what each is set to', typeof state.settingValues.italics, 'boolean')
+
+    await opened.send({ type: 'setSetting', key: 'accentedStatusBar', value: true })
+    checkThat(
+      'setting one writes it globally',
+      opened.written.some((entry) => entry.includes('accentedStatusBar=true')),
+      opened.written.slice(-4).join(', ') || 'nothing written',
+    )
+
+    await opened.send({ type: 'setSetting', key: 'selectionStyle', value: 'accent' })
+    checkThat(
+      'and an enum lands the same way',
+      opened.written.some((entry) => entry.includes('selectionStyle="accent"')),
+      opened.written.slice(-4).join(', ') || 'nothing written',
     )
   }
 

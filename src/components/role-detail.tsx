@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 
 import { hsl, toHsl } from '@/core/color'
+import { raiseToFloor } from '@/utils/contrast-fix'
 import { KEY_PREVIEW } from '@/constants/panel'
 import { Swatch } from '@/components/swatch'
 import { HEX, isFailing, type RoleView } from '@/webview/model'
@@ -119,12 +120,15 @@ export function HexField({
 export function RoleDetail({
   role,
   concepts,
+  backdrop,
   onClear,
   onEdit,
   onRevert,
 }: {
   role: RoleView
   concepts: Concept[]
+  /** What the ratio is measured against, so Fix it can solve for the same number. */
+  backdrop: string
   onClear: () => void
   onEdit: (value: string) => void
   onRevert: () => void
@@ -168,7 +172,16 @@ export function RoleDetail({
       )}
 
       <p class={isFailing(role) ? 'detail-contrast warn' : 'detail-contrast'}>
-        {contrastLine(role)}
+        <span>{contrastLine(role)}</span>
+        {isFailing(role) && (
+          <button
+            class="fix"
+            title="Move the lightness until it clears, keeping the hue"
+            onClick={() => onEdit(raiseToFloor(role.value, backdrop, role.floor.min!))}
+          >
+            Fix it
+          </button>
+        )}
       </p>
 
       <h3>What it paints</h3>

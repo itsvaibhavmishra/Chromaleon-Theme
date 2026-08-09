@@ -3,14 +3,17 @@ import { render } from 'preact'
 import '@/webview/style.css'
 import { useEffect, useState } from 'preact/hooks'
 
+import { Arrow } from '@/components/arrow'
 import { Confirm } from '@/components/confirm'
 import { Overflow, ThemePicker } from '@/components/menus'
 import { Resizer } from '@/components/resizer'
 import { RoleDetail } from '@/components/role-detail'
 import { RoleList } from '@/components/role-list'
+import { SettingsPane } from '@/components/settings-pane'
 import { CANVAS_DEFAULT, KEEPS_SELECTION, type Tab, TABS } from '@/constants/panel'
-import { Canvas } from '@/webview/canvas'
+import { Canvas, type CanvasSettings } from '@/webview/canvas'
 import { clampCanvas, persist, post, restored } from '@/webview/host'
+import { canRedo, canUndo, record, redo, started, undo } from '@/utils/history'
 import { type Compare, derive, shortName } from '@/webview/model'
 import type { PanelState, ToWebview } from '@/webview/protocol'
 
@@ -27,7 +30,9 @@ function App() {
   // Edits live here until saved, and nothing the panel does reaches the editor on its own.
   // Null means untouched; once set it is the complete override set, not a layer over the
   // saved one, so a draft can remove a saved colour as well as add one.
-  const [draft, setDraft] = useState<Record<string, string> | null>(null)
+  const [drafts, setDrafts] = useState(started<Record<string, string> | null>(null))
+  const draft = drafts.present
+  const setDraft = (next: Record<string, string> | null) => setDrafts(record(drafts, next))
   const [compare, setCompare] = useState<Compare | null>(null)
   // A name is a label rather than appearance, so it lands on commit instead of waiting behind
   // Save. The id travels with it: posting against whatever the panel happened to be viewing
@@ -56,6 +61,12 @@ function App() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setSelected(null)
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'z') return
+      // Typing a hex has its own undo stack, and stealing it mid-edit would be maddening.
+      const target = event.target as HTMLElement | null
+      if (target?.closest('input, textarea, [contenteditable]')) return
+      event.preventDefault()
+      setDrafts((current) => (event.shiftKey ? redo(current) : undo(current)))
     }
     const onClick = (event: MouseEvent) => {
       if (!(event.target as HTMLElement).closest(KEEPS_SELECTION)) setSelected(null)
@@ -103,6 +114,20 @@ function App() {
 
   const activeRole = roles.find((role) => role.id === selected) ?? null
 
+  // The miniature answers "what will this look like", so the settings that change surfaces
+  // belong in it as much as the colours do.
+  const canvasSettings = (values: Record<string, string | boolean>): CanvasSettings => ({
+    italics: values.italics !== false,
+    currentLine: String(values.currentLine ?? 'outline'),
+    tabIndicator: String(values.tabIndicator ?? 'bottom'),
+    tabBar: String(values.tabBar ?? 'flat'),
+    borders: String(values.borders ?? 'none'),
+    accentedStatusBar: values.accentedStatusBar === true,
+    shadows: values.shadows !== false,
+    accentFolders: values.accentFolders === true,
+    hideExplorerArrows: values.hideExplorerArrows === true,
+  })
+
   return (
     <div class="app">
       <header class="context">
@@ -124,6 +149,27 @@ function App() {
           >
             Hold to compare
           </button>
+
+          <span class="context-history">
+            <button
+              class="icon-button"
+              title="Undo"
+              aria-label="Undo"
+              disabled={!canUndo(drafts)}
+              onClick={() => setDrafts(undo(drafts))}
+            >
+              <Arrow />
+            </button>
+            <button
+              class="icon-button"
+              title="Redo"
+              aria-label="Redo"
+              disabled={!canRedo(drafts)}
+              onClick={() => setDrafts(redo(drafts))}
+            >
+              <Arrow forward />
+            </button>
+          </span>
           <Overflow />
         </div>
 
@@ -215,6 +261,8 @@ function App() {
           palette={view.canvas}
           collapsed={collapsed}
           showTerminal={showTerminal}
+          settings={canvasSettings(state.settingValues)}
+          icons={state.treeIcons}
           selected={selected}
           onPick={setSelected}
         />
@@ -254,6 +302,7 @@ function App() {
                 <RoleDetail
                   role={activeRole}
                   concepts={state.concepts}
+                  backdrop={activeRole.floor.on === 'accent' ? view.accent : view.palette.bg}
                   onClear={() => setSelected(null)}
                   onEdit={(value) => setRole(activeRole.id, value)}
                   onRevert={() => setRole(activeRole.id, null)}
@@ -277,6 +326,13 @@ function App() {
               )}
             </div>
           </>
+        ) : tab === 'Settings' ? (
+          <SettingsPane
+            settings={state.settings}
+            values={state.settingValues}
+            themeAccent={view.palette.accent ?? ''}
+            onChange={(key, value) => post({ type: 'setSetting', key, value })}
+          />
         ) : (
           <div class="empty">
             <div class="empty-box" />

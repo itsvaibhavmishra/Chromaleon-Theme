@@ -20,6 +20,9 @@ export type ToHost =
   // A name is a label, not appearance, so it lands immediately rather than through the draft.
   | { type: 'renamePreset'; preset: string; name: string }
   | { type: 'deletePreset'; preset: string }
+  // A setting is not a theme edit, so it lands immediately rather than behind Save, which is
+  // what VS Code's own settings editor does and what people expect of a checkbox.
+  | { type: 'setSetting'; key: string; value: string | boolean }
 
 export type RoleGroup = 'Surfaces' | 'Foregrounds' | 'Accent' | 'Hue ramp' | 'Fixed'
 
@@ -55,6 +58,23 @@ export interface ThemeOption {
   highContrast: boolean
 }
 
+// Read back off the manifest rather than restated here, so a setting cannot be contributed
+// and then be missing from the panel. The same reason the reset command derives its key list.
+export interface SettingMeta {
+  /** Short key, without the `chromaleon.` prefix. */
+  key: string
+  kind: 'boolean' | 'enum' | 'text'
+  /** The manifest description, still carrying its inline markdown. */
+  description: string
+  options?: SettingOption[]
+}
+
+export interface SettingOption {
+  value: string
+  /** The manifest's enumDescriptions entry, when it has one. */
+  detail?: string
+}
+
 export interface PanelState {
   roles: RoleMeta[]
   concepts: Concept[]
@@ -69,6 +89,13 @@ export interface PanelState {
   presets: Record<string, PresetView>
   /** Which preset is switched on for each shipped theme. */
   activePresets: Record<string, string>
+  /** Every contributed setting the panel can render a control for, in manifest order. */
+  settings: SettingMeta[]
+  /** What each of those is set to right now, defaults included. */
+  settingValues: Record<string, string | boolean>
+  // The user's own file icons, inlined and keyed by the name the canvas draws. Empty for a
+  // font-based icon theme, where the canvas falls back to its own shapes.
+  treeIcons: Record<string, string>
 }
 
 export interface PresetView {

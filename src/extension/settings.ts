@@ -125,6 +125,16 @@ export async function applyTheme(base: string, id: string | null): Promise<void>
     .update('workbench.colorTheme', base, vscode.ConfigurationTarget.Global)
 }
 
+// Back at the default means removing the key rather than writing the default in, which is what
+// VS Code's own settings editor does and keeps settings.json to what someone actually chose.
+export async function writeSetting(key: string, value: string | boolean): Promise<void> {
+  const config = vscode.workspace.getConfiguration(NS)
+  const declared = config.inspect(key)
+  const next = value === declared?.defaultValue ? undefined : value
+  if (sameValue(declared?.globalValue, next)) return
+  await config.update(key, next, vscode.ConfigurationTarget.Global)
+}
+
 // Trimmed, and an empty name is refused rather than written: a preset with no name is
 // unpickable from a list that shows nothing else about it.
 export async function renamePreset(id: string, name: string): Promise<void> {

@@ -1,0 +1,241 @@
+/* 5b. The settings tab */
+
+.settings-pane {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 16px 18px 28px;
+}
+
+/* Columns rather than a grid: grid rows align to the tallest card and leave the short ones
+   trailing dead space, which is exactly what the Customizer card was sitting in. */
+.settings-grid {
+  columns: 330px;
+  column-gap: 14px;
+}
+
+.setting-card {
+  /* Cards pack by height instead of snapping to a row, so a one-setting card stays one tall. */
+  break-inside: avoid;
+  margin-bottom: 14px;
+  padding: 14px 16px 6px;
+  border-radius: var(--radius);
+  border: var(--line);
+  background: var(--vscode-editorWidget-background, transparent);
+}
+
+/* The swatch row wants a full line, so this one card asks for a wider column than the rest. */
+.setting-card.wide {
+  column-span: all;
+  margin-bottom: 16px;
+}
+
+.setting-card h2 {
+  margin: 0;
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+}
+
+.setting-blurb {
+  margin: 4px 0 2px;
+  font-size: 0.88em;
+}
+
+.setting {
+  padding: 12px 0;
+  border-bottom: var(--line);
+}
+
+.setting:last-child {
+  border-bottom: none;
+}
+
+.setting-label {
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.setting-help {
+  margin: 7px 0 0;
+  font-size: 0.87em;
+  line-height: 1.45;
+  color: var(--vscode-descriptionForeground);
+}
+
+.setting-help code {
+  font-size: 0.92em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--vscode-textCodeBlock-background, var(--vscode-input-background));
+}
+
+/* Segmented: every option visible, so the choice is the control rather than behind it. */
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius);
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-widget-border, transparent);
+}
+
+.segmented button {
+  flex: 1 1 auto;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  white-space: nowrap;
+}
+
+.segmented button.on {
+  color: var(--vscode-button-foreground);
+  background: var(--sel);
+}
+
+.segmented button.on:hover {
+  background: var(--sel);
+}
+
+.setting select,
+.setting-text {
+  width: 100%;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 5px 8px;
+  border-radius: var(--radius);
+  color: var(--vscode-input-foreground, var(--vscode-foreground));
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, var(--vscode-widget-border, transparent));
+}
+
+.setting-text.invalid {
+  border-color: var(--danger);
+}
+
+/* Switch: a checkbox renders as a raw system square that ignores the theme entirely. */
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+}
+
+.switch-track {
+  flex: none;
+  position: relative;
+  width: 30px;
+  height: 17px;
+  border-radius: 9px;
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.4));
+  transition: background 90ms ease;
+}
+
+.switch.on .switch-track {
+  background: var(--sel);
+  border-color: var(--sel);
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--vscode-descriptionForeground);
+  transition: transform 90ms ease;
+}
+
+.switch.on .switch-thumb {
+  transform: translateX(13px);
+  background: var(--vscode-button-foreground, #ffffff);
+}
+
+.switch-label {
+  font-weight: 500;
+}
+
+/* Accent: the one setting a colour panel can do better than a dropdown of colour names. */
+.accent-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.accent-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 5px;
+  border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.35));
+}
+
+.accent-swatch.on,
+.accent-chip.on {
+  outline: 2px solid var(--sel);
+  outline-offset: 1px;
+}
+
+.accent-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px 3px 4px;
+  font-size: 0.9em;
+  border-radius: 12px;
+  border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.35));
+  background: none;
+}
+
+.accent-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.35));
+}
+
+/* With the width available the picker sits beside the swatches rather than pushing them up. */
+.setting-card.wide .accent-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 22px;
+}
+
+.setting-card.wide .accent-swatches {
+  flex: 1 1 300px;
+}
+
+.setting-card.wide .accent-picker {
+  flex: 0 0 240px;
+  margin-top: 0;
+}
+
+.accent-picker {
+  margin-top: 12px;
+}
+
+.accent-hex {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.accent-hex code {
+  flex: 1;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  background: var(--vscode-input-background);
+}

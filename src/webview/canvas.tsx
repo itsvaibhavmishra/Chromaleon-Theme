@@ -1,5 +1,6 @@
 import type { ComponentChildren } from 'preact'
 
+import { TreeIcon } from '@/components/tree-icon'
 import { ACTIVE_FILE, SAMPLE, TREE } from '@/webview/sample'
 
 // A miniature of the parts of a VS Code window an extension can actually paint. Anything
@@ -10,10 +11,25 @@ import { ACTIVE_FILE, SAMPLE, TREE } from '@/webview/sample'
 // rather than eyeballed. The canvas is a map as much as a preview, so a region painted with
 // one role and labelled another would hand back the wrong answer when clicked.
 
+/** The subset of settings that change what a window looks like rather than what it does. */
+export interface CanvasSettings {
+  italics: boolean
+  currentLine: string
+  tabIndicator: string
+  tabBar: string
+  borders: string
+  accentedStatusBar: boolean
+  shadows: boolean
+  accentFolders: boolean
+  hideExplorerArrows: boolean
+}
+
 interface Props {
   palette: Record<string, string>
   collapsed: boolean
   showTerminal: boolean
+  settings: CanvasSettings
+  icons: Record<string, string>
   selected: string | null
   onPick: (role: string) => void
 }
@@ -87,7 +103,15 @@ function Glyph({ children, on }: { children: ComponentChildren; on?: boolean }) 
   )
 }
 
-export function Canvas({ palette, collapsed, showTerminal, selected, onPick }: Props) {
+export function Canvas({
+  palette,
+  collapsed,
+  showTerminal,
+  settings,
+  icons,
+  selected,
+  onPick,
+}: Props) {
   if (collapsed) return <Strip palette={palette} />
 
   // Every role as a custom property, so the markup below names roles rather than colours.
@@ -107,8 +131,20 @@ export function Canvas({ palette, collapsed, showTerminal, selected, onPick }: P
     if (hit?.dataset.role) onPick(hit.dataset.role)
   }
 
+  const modes = [
+    `cv-line-${settings.currentLine}`,
+    `cv-indicator-${settings.tabIndicator}`,
+    `cv-tabbar-${settings.tabBar}`,
+    `cv-borders-${settings.borders}`,
+    settings.italics ? 'cv-italics' : '',
+    settings.accentedStatusBar ? 'cv-accented-status' : '',
+    settings.shadows ? 'cv-shadows' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
-    <div class="canvas" style={vars} onClick={pick}>
+    <div class={`canvas ${modes}`} style={vars} onClick={pick}>
       <div {...paint('chrome', 'cv-activity')}>
         {ICONS.map((glyph, iconIndex) => (
           <svg
@@ -137,8 +173,22 @@ export function Canvas({ palette, collapsed, showTerminal, selected, onPick }: P
               ? paint('accent', 'cv-tree cv-tree-on')
               : paint('fgMuted', 'cv-tree')
           return (
-            <div key={entry.name} {...tag} style={{ paddingLeft: `${8 + entry.depth * 10}px` }}>
-              {entry.kind === 'folder' ? (entry.open ? '▾ ' : '▸ ') : ''}
+            <div key={entry.name} {...tag} style={{ paddingLeft: `${6 + entry.depth * 9}px` }}>
+              {entry.kind === 'folder' && !settings.hideExplorerArrows && (
+                <span class="cv-arrow">{entry.open ? '\u25be' : '\u25b8'}</span>
+              )}
+              {/* Our own set is already regenerated in the accent, so a real icon always
+                  beats a drawn one; the drawn shapes are only for font-based themes. */}
+              {icons[entry.name] ? (
+                <img class="cv-fi" src={icons[entry.name]} alt="" />
+              ) : (
+                <TreeIcon
+                  name={entry.name}
+                  folder={entry.kind === 'folder'}
+                  open={entry.open}
+                  accent={settings.accentFolders ? palette.accent : undefined}
+                />
+              )}
               {entry.name}
             </div>
           )
@@ -166,15 +216,20 @@ export function Canvas({ palette, collapsed, showTerminal, selected, onPick }: P
                 {Array.from({ length: line.indent }, (_, level) => (
                   <span key={level} {...paint('guide', 'cv-guide')} />
                 ))}
-                {line.spans.map((span, spanIndex) => (
-                  <span
-                    key={spanIndex}
-                    {...paint(span.role)}
-                    style={{ color: `var(--r-${span.role})` }}
-                  >
-                    {span.text}
-                  </span>
-                ))}
+                {line.spans.map((span, spanIndex) => {
+                  const tag = paint(span.role)
+                  const classes = [tag.class, span.italic ? 'cv-em' : ''].filter(Boolean).join(' ')
+                  return (
+                    <span
+                      key={spanIndex}
+                      {...tag}
+                      class={classes || undefined}
+                      style={{ color: `var(--r-${span.role})` }}
+                    >
+                      {span.text}
+                    </span>
+                  )
+                })}
               </span>
             </div>
           ))}

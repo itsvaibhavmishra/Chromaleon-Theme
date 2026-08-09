@@ -5,9 +5,17 @@ import * as vscode from 'vscode'
 import { NS } from '@/config/extension'
 
 import { resolveAccent } from '@/core/accents'
+import { treeIcons } from '@/extension/icon-preview'
 import { CONCEPTS } from '@/core/roles'
 import { RUNTIME } from '@/generated'
-import type { PanelState, RoleMeta, ThemeOption, ToHost, ToWebview } from '@/webview/protocol'
+import type {
+  PanelState,
+  RoleMeta,
+  SettingMeta,
+  ThemeOption,
+  ToHost,
+  ToWebview,
+} from '@/webview/protocol'
 import {
   activeVariant,
   applyTheme,
@@ -15,6 +23,7 @@ import {
   readSettings,
   renamePreset,
   savePreset,
+  writeSetting,
 } from '@/extension/settings'
 
 const VIEW_TYPE = 'chromaleon.customizer'
@@ -24,9 +33,39 @@ let current: vscode.WebviewPanel | undefined
 
 const HIGH_CONTRAST = ' High Contrast'
 
+// The manifest is the only place a setting is declared, so the panel's controls are read back
+// off it. An object-valued setting is state rather than a choice, so it gets no control.
+function contributedSettings(context: vscode.ExtensionContext): SettingMeta[] {
+  const declared: Record<string, ManifestSetting> =
+    context.extension?.packageJSON?.contributes?.configuration?.properties ?? {}
+
+  return Object.entries(declared)
+    .filter(([key, schema]) => key.startsWith(`${NS}.`) && schema.type !== 'object')
+    .map(([key, schema]) => {
+      const options = schema.enum?.map((value, index) => ({
+        value,
+        detail: schema.enumDescriptions?.[index],
+      }))
+      return {
+        key: key.slice(NS.length + 1),
+        kind: schema.type === 'boolean' ? 'boolean' : options ? 'enum' : 'text',
+        description: schema.markdownDescription ?? schema.description ?? '',
+        ...(options ? { options } : {}),
+      } satisfies SettingMeta
+    })
+}
+
+interface ManifestSetting {
+  type?: string
+  enum?: string[]
+  enumDescriptions?: string[]
+  description?: string
+  markdownDescription?: string
+}
+
 // Catalogue and every palette in one message, so the panel can show any theme without a
 // round trip and without changing the one you are working in.
-function panelState(): PanelState {
+function panelState(context: vscode.ExtensionContext): PanelState {
   const settings = readSettings()
   const variant = activeVariant()
   const themes: ThemeOption[] = Object.keys(RUNTIME.variants).map((label) => ({
@@ -54,6 +93,15 @@ function panelState(): PanelState {
     accentOverride: resolveAccent(settings.accent, settings.customAccent) ?? null,
     presets: settings.presets,
     activePresets: settings.activePresets,
+    settings: contributedSettings(context),
+    treeIcons: treeIcons(),
+    // readSettings already resolves each one against its default, so the panel never has to
+    // decide what an unset value shows as.
+    settingValues: Object.fromEntries(
+      Object.entries(settings).filter(
+        ([, value]) => typeof value === 'string' || typeof value === 'boolean',
+      ),
+    ),
   }
 }
 
@@ -91,7 +139,7 @@ function wire(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): voi
   panel.webview.html = html(panel.webview, context)
 
   const push = () => {
-    const message: ToWebview = { type: 'state', state: panelState() }
+    const message: ToWebview = { type: 'state', state: panelState(context) }
     void panel.webview.postMessage(message)
   }
 
@@ -113,6 +161,8 @@ function wire(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): voi
         void applyTheme(message.base, message.preset)
       } else if (message.type === 'renamePreset') {
         void renamePreset(message.preset, message.name)
+      } else if (message.type === 'setSetting') {
+        void writeSetting(message.key, message.value)
       } else if (message.type === 'deletePreset') {
         void deletePreset(message.preset)
       }
@@ -121,9 +171,8 @@ function wire(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): voi
     // part by itself. This resends the palette the canvas and the role list are drawn from.
     vscode.window.onDidChangeActiveColorTheme(() => push()),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (event.affectsConfiguration(NS) || event.affectsConfiguration('workbench.colorTheme')) {
-        push()
-      }
+      const watched = [NS, 'workbench.colorTheme', 'workbench.iconTheme']
+      if (watched.some((section) => event.affectsConfiguration(section))) push()
     }),
   ]
 

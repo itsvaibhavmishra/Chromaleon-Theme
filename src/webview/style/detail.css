@@ -248,3 +248,25 @@
   color: var(--vscode-button-foreground);
   background: var(--vscode-button-background);
 }
+
+/* The fix sits opposite the complaint, so it reads as the answer rather than more of it. */
+.detail-contrast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fix {
+  flex: none;
+  padding: 3px 12px;
+  font-weight: 500;
+  color: inherit;
+  background: none;
+  border: 1px solid currentColor;
+}
+
+.fix:hover:not(:disabled) {
+  color: var(--vscode-button-foreground);
+  background: currentColor;
+}

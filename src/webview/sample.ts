@@ -7,6 +7,8 @@
 export interface Span {
   text: string
   role: string
+  /** Set on the scopes the build italicises, so the italics setting only reaches those. */
+  italic?: boolean
 }
 
 export interface Line {
@@ -17,9 +19,10 @@ export interface Line {
   spans: Span[]
 }
 
-const span = (text: string, role: string): Span => ({ text, role })
+const span = (text: string, role: string, italic?: boolean): Span => ({ text, role, italic })
 
-const kw = (text: string) => span(text, 'cyan')
+// Comments, keywords and module names are what the build italicises; nothing else does.
+const kw = (text: string) => span(text, 'cyan', true)
 const punct = (text: string) => span(text, 'cyan')
 const fn = (text: string) => span(text, 'blue')
 const num = (text: string) => span(text, 'orange')
@@ -28,7 +31,7 @@ const prop = (text: string) => span(text, 'red')
 const plain = (text: string) => span(text, 'fg')
 
 export const SAMPLE: Line[] = [
-  { indent: 0, spans: [span('// 29 roles. 376 keys. Nothing else to edit.', 'fgSubtle')] },
+  { indent: 0, spans: [span('// 29 roles. 376 keys. Nothing else to edit.', 'fgSubtle', true)] },
   {
     indent: 0,
     spans: [
@@ -117,7 +120,7 @@ export const SAMPLE: Line[] = [
       span('false', 'pink'),
       punct(','),
       plain(' '),
-      span('// never follows accent', 'fgSubtle'),
+      span('// never follows accent', 'fgSubtle', true),
     ],
   },
   { indent: 0, spans: [punct('};')] },

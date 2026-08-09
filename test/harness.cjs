@@ -83,6 +83,9 @@ function baseStub() {
       registerWebviewPanelSerializer: () => ({ dispose() {} }),
     },
     Uri: { joinPath: (...parts) => ({ fsPath: parts.join('/') }) },
+    // The miniature resolves the active icon theme through here. Empty means no extension
+    // contributes one, which is the branch where the canvas draws its own shapes.
+    extensions: { all: [] },
     ViewColumn: { Active: -1, Beside: -2 },
     ConfigurationTarget: { Global: 1, Workspace: 2 },
   }
