@@ -1,5 +1,6 @@
 const {
   ROOT,
+  SOURCE_ROOT,
   MANIFEST,
   check,
   checkThat,
@@ -325,6 +326,29 @@ module.exports = async function customizer() {
       opened.written.some((entry) => entry.includes('selectionStyle="accent"')),
       opened.written.slice(-4).join(', ') || 'nothing written',
     )
+  }
+
+  console.log('\nthe release files agree with each other')
+  {
+    // Three files carried the version and nothing checked they matched, so a bump could land
+    // in one and not the others and only be found by someone reading the changelog later.
+    const changelog = fs.readFileSync(path.join(SOURCE_ROOT, 'CHANGELOG.md'), 'utf8')
+    const top = /^## \[(\d+\.\d+\.\d+)\]/m.exec(changelog)
+    check('the changelog names a released version', !!top, true)
+    check('and it is the one the manifest ships', top && top[1], MANIFEST.version)
+    checkThat(
+      'the version has a link to its tag',
+      changelog.includes(`[${MANIFEST.version}]: `),
+      'the reference link is missing, so the heading does not resolve',
+    )
+
+    // vsce refuses to publish a private package, and it reads as "not for distribution".
+    checkThat('the package is not marked private', MANIFEST.private === undefined, 'private is set')
+
+    const devlog = fs.readFileSync(path.join(SOURCE_ROOT, 'devlog.txt'), 'utf8')
+    for (const heading of ['New', 'Improvements', 'Fixed', 'Developers', 'Internal']) {
+      checkThat(`the devlog keeps its ${heading} heading`, devlog.includes(`- ${heading}:`))
+    }
   }
 
   console.log('\nevery setting is declared in package.json')

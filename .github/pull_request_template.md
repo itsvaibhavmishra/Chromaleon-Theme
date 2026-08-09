@@ -14,6 +14,13 @@
 
 - [ ] `devlog.txt` updated, or this is a staging into main release PR
 
+### Release
+
+<!-- Merging into staging publishes a beta build. If this change is not worth one, add the
+     `skip release` label. Merging into main never publishes; tagging does. -->
+
+- [ ] Not worth a beta build, so this PR carries the `skip release` label
+
 ### Checklist
 
 - [ ] `npm run check` passes, and I gated on its exit code rather than reading its output

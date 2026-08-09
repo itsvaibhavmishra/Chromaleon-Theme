@@ -21,7 +21,7 @@ another machine.
 
 One extension, and as many themes as you care to make.
 
-![Version](https://img.shields.io/badge/version-0.1.0-2578B3)
+![Version](https://img.shields.io/github/v/release/itsvaibhavmishra/Chromaleon-Theme?color=2578B3&label=version)
 ![Themes](https://img.shields.io/badge/themes-unlimited-8B5CF6)
 ![Icons](https://img.shields.io/badge/icons-1250-4FA6FF)
 ![VS Code](https://img.shields.io/badge/VS%20Code-%3E%3D1.102-007ACC?logo=visualstudiocode&logoColor=white)
