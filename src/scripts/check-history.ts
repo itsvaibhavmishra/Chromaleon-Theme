@@ -45,11 +45,11 @@ function main() {
       failed.push(short)
       console.log(`FAIL ${short}  ${subject}`)
       const output = (error as { stdout?: Buffer }).stdout?.toString() ?? ''
-      for (const line of output
+      for (const failureLine of output
         .split('\n')
-        .filter((l) => /error|FAIL/i.test(l))
+        .filter((outputLine) => /error|FAIL/i.test(outputLine))
         .slice(0, 6)) {
-        console.log(`       ${line.trim()}`)
+        console.log(`       ${failureLine.trim()}`)
       }
     } finally {
       git('worktree', 'remove', '--force', dir)

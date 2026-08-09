@@ -561,7 +561,7 @@ const KEY_PREVIEW = 6
 function Picker({ value, onChange }: { value: string; onChange: (next: string) => void }) {
   // Held here rather than re-derived from the hex every frame. A grey has no hue to read
   // back, so dragging to the left edge would otherwise snap the whole square to red.
-  const [[h, s, l], setHsl] = useState(() => toHsl(value))
+  const [[hue, saturation, lightness], setHsl] = useState(() => toHsl(value))
   const ours = useRef<string | null>(null)
   const square = useRef<HTMLDivElement>(null)
 
@@ -581,9 +581,9 @@ function Picker({ value, onChange }: { value: string; onChange: (next: string) =
     box.setPointerCapture(event.pointerId)
     const move = (at: PointerEvent) => {
       const rect = box.getBoundingClientRect()
-      const x = Math.min(1, Math.max(0, (at.clientX - rect.left) / rect.width))
-      const y = Math.min(1, Math.max(0, (at.clientY - rect.top) / rect.height))
-      emit([h, x * 100, (1 - y) * 100])
+      const acrossFraction = Math.min(1, Math.max(0, (at.clientX - rect.left) / rect.width))
+      const downFraction = Math.min(1, Math.max(0, (at.clientY - rect.top) / rect.height))
+      emit([hue, acrossFraction * 100, (1 - downFraction) * 100])
     }
     move(event)
     const stop = () => {
@@ -597,17 +597,22 @@ function Picker({ value, onChange }: { value: string; onChange: (next: string) =
 
   return (
     <div class="picker-body">
-      <div class="sv" ref={square} onPointerDown={drag} style={{ '--hue': hsl(h, 100, 50) }}>
-        <span class="sv-dot" style={{ left: `${s}%`, top: `${100 - l}%`, background: value }} />
+      <div class="sv" ref={square} onPointerDown={drag} style={{ '--hue': hsl(hue, 100, 50) }}>
+        <span
+          class="sv-dot"
+          style={{ left: `${saturation}%`, top: `${100 - lightness}%`, background: value }}
+        />
       </div>
       <input
         class="hue"
         type="range"
         min="0"
         max="359"
-        value={Math.round(h)}
+        value={Math.round(hue)}
         aria-label="Hue"
-        onInput={(event) => emit([Number((event.target as HTMLInputElement).value), s, l])}
+        onInput={(event) =>
+          emit([Number((event.target as HTMLInputElement).value), saturation, lightness])
+        }
       />
     </div>
   )

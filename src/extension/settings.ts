@@ -47,35 +47,40 @@ export interface Preset {
 // Defaults are duplicated in package.json's configuration block; both are asserted equal by
 // the settings test, so one cannot quietly drift from the other.
 export function readSettings(): Settings {
-  const c = vscode.workspace.getConfiguration(NS)
+  const config = vscode.workspace.getConfiguration(NS)
   return {
-    accent: c.get('accent', THEME_DEFAULT),
-    customAccent: c.get('customAccent', ''),
-    accentedStatusBar: c.get('accentedStatusBar', false),
-    selectionStyle: c.get<SelectionStyle>('selectionStyle', 'room'),
-    cursorStyle: c.get<CursorStyle>('cursorStyle', 'theme'),
-    italics: c.get('italics', true),
-    currentLine: c.get<CurrentLine>('currentLine', 'outline'),
-    tabIndicator: c.get<TabIndicator>('tabIndicator', 'bottom'),
-    tabBar: c.get<TabBar>('tabBar', 'flat'),
-    borders: c.get<Borders>('borders', 'none'),
-    shadows: c.get('shadows', true),
-    accentFolders: c.get('accentFolders', false),
-    hideExplorerArrows: c.get('hideExplorerArrows', false),
-    syncIconTheme: c.get('syncIconTheme', true),
-    customizerLocation: c.get<CustomizerLocation>('customizerLocation', 'newWindow'),
-    presets: c.get<Settings['presets']>('presets', {}),
-    activePresets: c.get<Settings['activePresets']>('activePresets', {}),
+    accent: config.get('accent', THEME_DEFAULT),
+    customAccent: config.get('customAccent', ''),
+    accentedStatusBar: config.get('accentedStatusBar', false),
+    selectionStyle: config.get<SelectionStyle>('selectionStyle', 'room'),
+    cursorStyle: config.get<CursorStyle>('cursorStyle', 'theme'),
+    italics: config.get('italics', true),
+    currentLine: config.get<CurrentLine>('currentLine', 'outline'),
+    tabIndicator: config.get<TabIndicator>('tabIndicator', 'bottom'),
+    tabBar: config.get<TabBar>('tabBar', 'flat'),
+    borders: config.get<Borders>('borders', 'none'),
+    shadows: config.get('shadows', true),
+    accentFolders: config.get('accentFolders', false),
+    hideExplorerArrows: config.get('hideExplorerArrows', false),
+    syncIconTheme: config.get('syncIconTheme', true),
+    customizerLocation: config.get<CustomizerLocation>('customizerLocation', 'newWindow'),
+    presets: config.get<Settings['presets']>('presets', {}),
+    activePresets: config.get<Settings['activePresets']>('activePresets', {}),
   }
 }
 
 // Only what the user set globally: `get()` merges scopes, and writing that back folds a
 // workspace's customisations into their own settings. Bug 1, in a new place.
-function globalValue<K extends keyof Settings>(key: K): Settings[K] | undefined {
-  return vscode.workspace.getConfiguration(NS).inspect<Settings[K]>(key)?.globalValue
+function globalValue<SettingKey extends keyof Settings>(
+  key: SettingKey,
+): Settings[SettingKey] | undefined {
+  return vscode.workspace.getConfiguration(NS).inspect<Settings[SettingKey]>(key)?.globalValue
 }
 
-async function write<K extends keyof Settings>(key: K, value: Settings[K]): Promise<void> {
+async function write<SettingKey extends keyof Settings>(
+  key: SettingKey,
+  value: Settings[SettingKey],
+): Promise<void> {
   const empty = typeof value === 'object' && value !== null && Object.keys(value).length === 0
   await vscode.workspace
     .getConfiguration(NS)
@@ -86,8 +91,8 @@ async function write<K extends keyof Settings>(key: K, value: Settings[K]): Prom
 // make the next one Preset 2 again and quietly reuse a name someone recognises.
 function nextId(presets: Record<string, Preset>): { id: string; name: string } {
   const used = Object.keys(presets).map((id) => Number(id.replace('p', '')) || 0)
-  const n = Math.max(0, ...used) + 1
-  return { id: `p${n}`, name: `Preset ${n}` }
+  const nextNumber = Math.max(0, ...used) + 1
+  return { id: `p${nextNumber}`, name: `Preset ${nextNumber}` }
 }
 
 // Saving a draft against a shipped theme forks it first, so the 22 are never written to.

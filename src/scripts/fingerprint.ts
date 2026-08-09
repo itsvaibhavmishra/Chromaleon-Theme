@@ -9,7 +9,7 @@ const LOCK = join(ROOT, 'src', 'theme-lock.json')
 /** Hashes every generated theme file, in a stable order. */
 export async function fingerprint(): Promise<string> {
   const dir = join(ROOT, 'themes')
-  const files = (await readdir(dir)).filter((f) => f.endsWith('.json')).sort()
+  const files = (await readdir(dir)).filter((name) => name.endsWith('.json')).sort()
   const hash = createHash('sha256')
   for (const file of files) {
     hash.update(file)

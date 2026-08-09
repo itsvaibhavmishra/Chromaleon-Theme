@@ -17,18 +17,18 @@ export interface Line {
   spans: Span[]
 }
 
-const s = (text: string, role: string): Span => ({ text, role })
+const span = (text: string, role: string): Span => ({ text, role })
 
-const kw = (text: string) => s(text, 'cyan')
-const punct = (text: string) => s(text, 'cyan')
-const fn = (text: string) => s(text, 'blue')
-const num = (text: string) => s(text, 'orange')
-const type = (text: string) => s(text, 'yellow')
-const prop = (text: string) => s(text, 'red')
-const plain = (text: string) => s(text, 'fg')
+const kw = (text: string) => span(text, 'cyan')
+const punct = (text: string) => span(text, 'cyan')
+const fn = (text: string) => span(text, 'blue')
+const num = (text: string) => span(text, 'orange')
+const type = (text: string) => span(text, 'yellow')
+const prop = (text: string) => span(text, 'red')
+const plain = (text: string) => span(text, 'fg')
 
 export const SAMPLE: Line[] = [
-  { indent: 0, spans: [s('// 29 roles. 376 keys. Nothing else to edit.', 'fgSubtle')] },
+  { indent: 0, spans: [span('// 29 roles. 376 keys. Nothing else to edit.', 'fgSubtle')] },
   {
     indent: 0,
     spans: [
@@ -43,7 +43,7 @@ export const SAMPLE: Line[] = [
       plain(' '),
       kw('from'),
       plain(' '),
-      s('"./color"', 'green'),
+      span('"./color"', 'green'),
     ],
   },
   { indent: 0, spans: [] },
@@ -52,7 +52,7 @@ export const SAMPLE: Line[] = [
     spans: [
       kw('export'),
       plain(' '),
-      s('const', 'purple'),
+      span('const', 'purple'),
       plain(' '),
       plain('ROLES'),
       plain(' '),
@@ -114,10 +114,10 @@ export const SAMPLE: Line[] = [
       prop('light'),
       punct(':'),
       plain('  '),
-      s('false', 'pink'),
+      span('false', 'pink'),
       punct(','),
       plain(' '),
-      s('// never follows accent', 'fgSubtle'),
+      span('// never follows accent', 'fgSubtle'),
     ],
   },
   { indent: 0, spans: [punct('};')] },
@@ -127,7 +127,7 @@ export const SAMPLE: Line[] = [
     spans: [
       kw('export'),
       plain(' '),
-      s('function', 'purple'),
+      span('function', 'purple'),
       plain(' '),
       fn('expand'),
       punct('('),

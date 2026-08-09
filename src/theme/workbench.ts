@@ -1,477 +1,477 @@
 import type { Palette } from '@/core/palette'
-import { a } from '@/core/color'
+import { withAlpha } from '@/core/color'
 
 // Maps every workbench colour key VS Code exposes onto a palette role, grouped by
 // namespace. Adding a variant never touches this file.
-export function workbench(p: Palette): Record<string, string> {
+export function workbench(palette: Palette): Record<string, string> {
   return {
     // activityBar
-    'activityBar.activeBorder': p.accent,
-    'activityBar.background': p.chrome,
-    'activityBar.border': a(p.border, '99'),
-    'activityBar.foreground': p.fg,
-    'activityBar.inactiveForeground': a(p.fgMuted, 'b3'),
+    'activityBar.activeBorder': palette.accent,
+    'activityBar.background': palette.chrome,
+    'activityBar.border': withAlpha(palette.border, '99'),
+    'activityBar.foreground': palette.fg,
+    'activityBar.inactiveForeground': withAlpha(palette.fgMuted, 'b3'),
 
     // activityBarBadge
-    'activityBarBadge.background': p.accent,
-    'activityBarBadge.foreground': p.onAccent,
+    'activityBarBadge.background': palette.accent,
+    'activityBarBadge.foreground': palette.onAccent,
 
     // activityBarTop
-    'activityBarTop.activeBorder': p.accent,
-    'activityBarTop.background': p.chrome,
-    'activityBarTop.foreground': p.fg,
-    'activityBarTop.inactiveForeground': a(p.fgMuted, 'b3'),
+    'activityBarTop.activeBorder': palette.accent,
+    'activityBarTop.background': palette.chrome,
+    'activityBarTop.foreground': palette.fg,
+    'activityBarTop.inactiveForeground': withAlpha(palette.fgMuted, 'b3'),
 
     // activityErrorBadge
-    'activityErrorBadge.background': p.red,
-    'activityErrorBadge.foreground': p.black,
+    'activityErrorBadge.background': palette.red,
+    'activityErrorBadge.foreground': palette.black,
 
     // activityWarningBadge
-    'activityWarningBadge.background': p.yellow,
-    'activityWarningBadge.foreground': p.black,
+    'activityWarningBadge.background': palette.yellow,
+    'activityWarningBadge.foreground': palette.black,
 
     // agentsPanel
-    'agentsPanel.border': a(p.border, '99'),
+    'agentsPanel.border': withAlpha(palette.border, '99'),
 
     // badge
-    'badge.background': a(p.surfaceAlt, '99'),
-    'badge.foreground': p.fg,
+    'badge.background': withAlpha(palette.surfaceAlt, '99'),
+    'badge.foreground': palette.fg,
 
     // breadcrumb
-    'breadcrumb.activeSelectionForeground': p.accent,
-    'breadcrumb.background': p.bg,
-    'breadcrumb.focusForeground': p.fg,
-    'breadcrumb.foreground': p.fgMuted,
+    'breadcrumb.activeSelectionForeground': palette.accent,
+    'breadcrumb.background': palette.bg,
+    'breadcrumb.focusForeground': palette.fg,
+    'breadcrumb.foreground': palette.fgMuted,
 
     // breadcrumbPicker
-    'breadcrumbPicker.background': p.chrome,
+    'breadcrumbPicker.background': palette.chrome,
 
     // button
-    'button.background': p.accent,
-    'button.foreground': p.onAccent,
-    'button.hoverBackground': a(p.accent, 'cc'),
-    'button.secondaryBackground': p.chrome,
-    'button.secondaryForeground': p.fg,
-    'button.separator': a(p.onAccent, '33'),
+    'button.background': palette.accent,
+    'button.foreground': palette.onAccent,
+    'button.hoverBackground': withAlpha(palette.accent, 'cc'),
+    'button.secondaryBackground': palette.chrome,
+    'button.secondaryForeground': palette.fg,
+    'button.separator': withAlpha(palette.onAccent, '33'),
 
     // chat
-    'chat.avatarForeground': p.accent,
-    'chat.checkpointSeparator': p.guide,
-    'chat.requestBorder': a(p.hairline, '0f'),
-    'chat.requestBubbleBackground': p.surface,
-    'chat.requestBubbleHoverBackground': p.surface,
-    'chat.requestCodeBorder': p.lineNumber,
-    'chat.slashCommandBackground': a(p.hairline, '00'),
-    'chat.slashCommandForeground': p.accent,
+    'chat.avatarForeground': palette.accent,
+    'chat.checkpointSeparator': palette.guide,
+    'chat.requestBorder': withAlpha(palette.hairline, '0f'),
+    'chat.requestBubbleBackground': palette.surface,
+    'chat.requestBubbleHoverBackground': palette.surface,
+    'chat.requestCodeBorder': palette.lineNumber,
+    'chat.slashCommandBackground': withAlpha(palette.hairline, '00'),
+    'chat.slashCommandForeground': palette.accent,
 
     // commandCenter
-    'commandCenter.activeBorder': a(p.bgAlt, '00'),
-    'commandCenter.activeForeground': p.fg,
-    'commandCenter.border': p.bgAlt,
-    'commandCenter.foreground': a(p.fg, '99'),
+    'commandCenter.activeBorder': withAlpha(palette.bgAlt, '00'),
+    'commandCenter.activeForeground': palette.fg,
+    'commandCenter.border': palette.bgAlt,
+    'commandCenter.foreground': withAlpha(palette.fg, '99'),
 
     // _root
-    contrastActiveBorder: a(p.bg, '00'),
-    contrastBorder: a(p.bg, '00'),
-    descriptionForeground: a(p.fg, 'cc'),
-    disabledForeground: a(p.fgSubtle, 'ff'),
-    focusBorder: a(p.hairline, '00'),
-    foreground: p.fg,
+    contrastActiveBorder: withAlpha(palette.bg, '00'),
+    contrastBorder: withAlpha(palette.bg, '00'),
+    descriptionForeground: withAlpha(palette.fg, 'cc'),
+    disabledForeground: withAlpha(palette.fgSubtle, 'ff'),
+    focusBorder: withAlpha(palette.hairline, '00'),
+    foreground: palette.fg,
 
     // debugConsole
-    'debugConsole.errorForeground': p.red,
-    'debugConsole.infoForeground': p.cyan,
-    'debugConsole.warningForeground': p.yellow,
+    'debugConsole.errorForeground': palette.red,
+    'debugConsole.infoForeground': palette.cyan,
+    'debugConsole.warningForeground': palette.yellow,
 
     // debugToolBar
-    'debugToolBar.background': p.chrome,
+    'debugToolBar.background': palette.chrome,
 
     // diffEditor
-    'diffEditor.insertedLineBackground': a(p.green, '14'),
-    'diffEditor.insertedTextBackground': a(p.green, '14'),
-    'diffEditor.removedLineBackground': a(p.red, '14'),
-    'diffEditor.removedTextBackground': a(p.red, '14'),
+    'diffEditor.insertedLineBackground': withAlpha(palette.green, '14'),
+    'diffEditor.insertedTextBackground': withAlpha(palette.green, '14'),
+    'diffEditor.removedLineBackground': withAlpha(palette.red, '14'),
+    'diffEditor.removedTextBackground': withAlpha(palette.red, '14'),
 
     // dropdown
-    'dropdown.background': p.chrome,
-    'dropdown.border': a(p.hairline, '0f'),
+    'dropdown.background': palette.chrome,
+    'dropdown.border': withAlpha(palette.hairline, '0f'),
 
     // editor
-    'editor.background': p.bg,
-    'editor.findMatchBackground': a(p.hairline, '26'),
-    'editor.findMatchBorder': p.accent,
-    'editor.findMatchHighlightBackground': a(p.hairline, '1a'),
-    'editor.findMatchHighlightBorder': a(p.hairline, '4d'),
-    'editor.findMatchHighlightForeground': p.fg,
-    'editor.findRangeHighlightBackground': a(p.yellow, '4d'),
-    'editor.foreground': p.fg,
-    'editor.lineHighlightBackground': a(p.surfaceAlt, '00'),
-    'editor.lineHighlightBorder': a(p.surfaceAlt, '99'),
-    'editor.selectionBackground': a(p.accentDim, '80'),
-    'editor.selectionForeground': p.fg,
-    'editor.selectionHighlightBackground': a(p.cursor, '33'),
-    'editor.wordHighlightBackground': a(p.pink, '4d'),
-    'editor.wordHighlightStrongBackground': a(p.green, '4d'),
+    'editor.background': palette.bg,
+    'editor.findMatchBackground': withAlpha(palette.hairline, '26'),
+    'editor.findMatchBorder': palette.accent,
+    'editor.findMatchHighlightBackground': withAlpha(palette.hairline, '1a'),
+    'editor.findMatchHighlightBorder': withAlpha(palette.hairline, '4d'),
+    'editor.findMatchHighlightForeground': palette.fg,
+    'editor.findRangeHighlightBackground': withAlpha(palette.yellow, '4d'),
+    'editor.foreground': palette.fg,
+    'editor.lineHighlightBackground': withAlpha(palette.surfaceAlt, '00'),
+    'editor.lineHighlightBorder': withAlpha(palette.surfaceAlt, '99'),
+    'editor.selectionBackground': withAlpha(palette.accentDim, '80'),
+    'editor.selectionForeground': palette.fg,
+    'editor.selectionHighlightBackground': withAlpha(palette.cursor, '33'),
+    'editor.wordHighlightBackground': withAlpha(palette.pink, '4d'),
+    'editor.wordHighlightStrongBackground': withAlpha(palette.green, '4d'),
 
     // editorBracketMatch
-    'editorBracketMatch.background': p.bg,
-    'editorBracketMatch.border': a(p.cursor, '80'),
+    'editorBracketMatch.background': palette.bg,
+    'editorBracketMatch.border': withAlpha(palette.cursor, '80'),
 
     // editorCodeLens
-    'editorCodeLens.foreground': p.fgSubtle,
+    'editorCodeLens.foreground': palette.fgSubtle,
 
     // editorCursor
-    'editorCursor.background': p.cursor,
-    'editorCursor.foreground': p.cursor,
+    'editorCursor.background': palette.cursor,
+    'editorCursor.foreground': palette.cursor,
 
     // editorError
-    'editorError.foreground': a(p.red, 'b3'),
+    'editorError.foreground': withAlpha(palette.red, 'b3'),
 
     // editorGroup
-    'editorGroup.border': a(p.fg, '0f'),
+    'editorGroup.border': withAlpha(palette.fg, '0f'),
 
     // editorGroupHeader
-    'editorGroupHeader.tabsBackground': p.bg,
+    'editorGroupHeader.tabsBackground': palette.bg,
 
     // editorGutter
-    'editorGutter.addedBackground': a(p.green, '99'),
-    'editorGutter.addedSecondaryBackground': a(p.green, '99'),
-    'editorGutter.deletedBackground': a(p.red, '99'),
-    'editorGutter.deletedSecondaryBackground': a(p.red, '99'),
-    'editorGutter.modifiedBackground': a(p.blue, '99'),
-    'editorGutter.modifiedSecondaryBackground': a(p.blue, '99'),
+    'editorGutter.addedBackground': withAlpha(palette.green, '99'),
+    'editorGutter.addedSecondaryBackground': withAlpha(palette.green, '99'),
+    'editorGutter.deletedBackground': withAlpha(palette.red, '99'),
+    'editorGutter.deletedSecondaryBackground': withAlpha(palette.red, '99'),
+    'editorGutter.modifiedBackground': withAlpha(palette.blue, '99'),
+    'editorGutter.modifiedSecondaryBackground': withAlpha(palette.blue, '99'),
 
     // editorHoverWidget
-    'editorHoverWidget.background': p.chrome,
-    'editorHoverWidget.border': a(p.hairline, '0f'),
+    'editorHoverWidget.background': palette.chrome,
+    'editorHoverWidget.border': withAlpha(palette.hairline, '0f'),
 
     // editorIndentGuide
-    'editorIndentGuide.activeBackground': p.guide,
-    'editorIndentGuide.background': a(p.guide, 'b3'),
+    'editorIndentGuide.activeBackground': palette.guide,
+    'editorIndentGuide.background': withAlpha(palette.guide, 'b3'),
 
     // editorInfo
-    'editorInfo.foreground': a(p.blue, 'b3'),
+    'editorInfo.foreground': withAlpha(palette.blue, 'b3'),
 
     // editorLineNumber
-    'editorLineNumber.activeForeground': p.fgMuted,
-    'editorLineNumber.foreground': a(p.lineNumber, 'ff'),
+    'editorLineNumber.activeForeground': palette.fgMuted,
+    'editorLineNumber.foreground': withAlpha(palette.lineNumber, 'ff'),
 
     // editorLink
-    'editorLink.activeForeground': p.fg,
+    'editorLink.activeForeground': palette.fg,
 
     // editorMarkerNavigation
-    'editorMarkerNavigation.background': a(p.fg, '0d'),
+    'editorMarkerNavigation.background': withAlpha(palette.fg, '0d'),
 
     // editorOverviewRuler
-    'editorOverviewRuler.border': p.bg,
-    'editorOverviewRuler.errorForeground': a(p.red, '99'),
-    'editorOverviewRuler.findMatchForeground': p.accent,
-    'editorOverviewRuler.infoForeground': a(p.blue, '99'),
-    'editorOverviewRuler.warningForeground': a(p.yellow, '99'),
+    'editorOverviewRuler.border': palette.bg,
+    'editorOverviewRuler.errorForeground': withAlpha(palette.red, '99'),
+    'editorOverviewRuler.findMatchForeground': palette.accent,
+    'editorOverviewRuler.infoForeground': withAlpha(palette.blue, '99'),
+    'editorOverviewRuler.warningForeground': withAlpha(palette.yellow, '99'),
 
     // editorRuler
-    'editorRuler.foreground': p.guide,
+    'editorRuler.foreground': palette.guide,
 
     // editorStickyScrollHover
-    'editorStickyScrollHover.background': a(p.accentDim, '4d'),
+    'editorStickyScrollHover.background': withAlpha(palette.accentDim, '4d'),
 
     // editorSuggestWidget
-    'editorSuggestWidget.background': p.chrome,
-    'editorSuggestWidget.border': a(p.hairline, '0f'),
-    'editorSuggestWidget.foreground': p.fg,
-    'editorSuggestWidget.highlightForeground': p.accent,
-    'editorSuggestWidget.selectedBackground': a(p.surfaceAlt, '99'),
+    'editorSuggestWidget.background': palette.chrome,
+    'editorSuggestWidget.border': withAlpha(palette.hairline, '0f'),
+    'editorSuggestWidget.foreground': palette.fg,
+    'editorSuggestWidget.highlightForeground': palette.accent,
+    'editorSuggestWidget.selectedBackground': withAlpha(palette.surfaceAlt, '99'),
 
     // editorWarning
-    'editorWarning.foreground': a(p.yellow, 'b3'),
+    'editorWarning.foreground': withAlpha(palette.yellow, 'b3'),
 
     // editorWhitespace
-    'editorWhitespace.foreground': a(p.whitespace, 'ff'),
+    'editorWhitespace.foreground': withAlpha(palette.whitespace, 'ff'),
 
     // editorWidget
-    'editorWidget.background': p.chrome,
-    'editorWidget.border': p.accent,
-    'editorWidget.resizeBorder': p.accent,
+    'editorWidget.background': palette.chrome,
+    'editorWidget.border': palette.accent,
+    'editorWidget.resizeBorder': palette.accent,
 
     // extensionBadge
-    'extensionBadge.remoteForeground': p.fg,
+    'extensionBadge.remoteForeground': palette.fg,
 
     // extensionButton
-    'extensionButton.background': a(p.accent, '14'),
-    'extensionButton.border': a(p.accent, '14'),
-    'extensionButton.foreground': p.accent,
-    'extensionButton.hoverBackground': a(p.accent, '33'),
-    'extensionButton.prominentBackground': a(p.accent, '14'),
-    'extensionButton.prominentForeground': p.accent,
-    'extensionButton.prominentHoverBackground': a(p.accent, '33'),
-    'extensionButton.separator': a(p.accent, '33'),
+    'extensionButton.background': withAlpha(palette.accent, '14'),
+    'extensionButton.border': withAlpha(palette.accent, '14'),
+    'extensionButton.foreground': palette.accent,
+    'extensionButton.hoverBackground': withAlpha(palette.accent, '33'),
+    'extensionButton.prominentBackground': withAlpha(palette.accent, '14'),
+    'extensionButton.prominentForeground': palette.accent,
+    'extensionButton.prominentHoverBackground': withAlpha(palette.accent, '33'),
+    'extensionButton.separator': withAlpha(palette.accent, '33'),
 
     // extensionIcon
-    'extensionIcon.preReleaseForeground': a(p.hairline, '1a'),
-    'extensionIcon.verifiedForeground': p.green,
+    'extensionIcon.preReleaseForeground': withAlpha(palette.hairline, '1a'),
+    'extensionIcon.verifiedForeground': palette.green,
 
     // gitDecoration
-    'gitDecoration.conflictingResourceForeground': a(p.yellow, 'e6'),
-    'gitDecoration.deletedResourceForeground': a(p.red, 'e6'),
-    'gitDecoration.ignoredResourceForeground': a(p.fgMuted, '80'),
-    'gitDecoration.modifiedResourceForeground': a(p.blue, 'e6'),
-    'gitDecoration.untrackedResourceForeground': a(p.green, 'e6'),
+    'gitDecoration.conflictingResourceForeground': withAlpha(palette.yellow, 'e6'),
+    'gitDecoration.deletedResourceForeground': withAlpha(palette.red, 'e6'),
+    'gitDecoration.ignoredResourceForeground': withAlpha(palette.fgMuted, '80'),
+    'gitDecoration.modifiedResourceForeground': withAlpha(palette.blue, 'e6'),
+    'gitDecoration.untrackedResourceForeground': withAlpha(palette.green, 'e6'),
 
     // icon
-    'icon.foreground': a(p.fg, 'b3'),
+    'icon.foreground': withAlpha(palette.fg, 'b3'),
 
     // inlineChatInput
-    'inlineChatInput.border': a(p.hairline, '0f'),
+    'inlineChatInput.border': withAlpha(palette.hairline, '0f'),
 
     // input
-    'input.background': p.surface,
-    'input.border': a(p.hairline, '0f'),
-    'input.foreground': p.fg,
-    'input.placeholderForeground': a(p.fg, '66'),
+    'input.background': palette.surface,
+    'input.border': withAlpha(palette.hairline, '0f'),
+    'input.foreground': palette.fg,
+    'input.placeholderForeground': withAlpha(palette.fg, '66'),
 
     // inputOption
-    'inputOption.activeBackground': a(p.fg, '4d'),
-    'inputOption.activeBorder': a(p.fg, '4d'),
+    'inputOption.activeBackground': withAlpha(palette.fg, '4d'),
+    'inputOption.activeBorder': withAlpha(palette.fg, '4d'),
 
     // inputValidation
-    'inputValidation.errorBorder': p.red,
-    'inputValidation.infoBorder': p.blue,
-    'inputValidation.warningBorder': p.yellow,
+    'inputValidation.errorBorder': palette.red,
+    'inputValidation.infoBorder': palette.blue,
+    'inputValidation.warningBorder': palette.yellow,
 
     // keybindingLabel
-    'keybindingLabel.border': p.border,
-    'keybindingLabel.bottomBorder': p.border,
+    'keybindingLabel.border': palette.border,
+    'keybindingLabel.bottomBorder': palette.border,
 
     // list
-    'list.activeSelectionBackground': a(p.chrome, 'ff'),
-    'list.activeSelectionForeground': p.accent,
-    'list.activeSelectionIconForeground': p.accent,
-    'list.dropBackground': a(p.fg, '1a'),
-    'list.dropBetweenBackground': a(p.fg, '1a'),
-    'list.focusBackground': a(p.fg, '26'),
-    'list.focusForeground': p.fg,
-    'list.highlightForeground': p.accent,
-    'list.hoverBackground': p.chrome,
-    'list.hoverForeground': p.fgBright,
-    'list.inactiveSelectionBackground': a(p.fg, '1a'),
-    'list.inactiveSelectionForeground': p.accent,
-    'list.inactiveSelectionIconForeground': p.accent,
+    'list.activeSelectionBackground': withAlpha(palette.chrome, 'ff'),
+    'list.activeSelectionForeground': palette.accent,
+    'list.activeSelectionIconForeground': palette.accent,
+    'list.dropBackground': withAlpha(palette.fg, '1a'),
+    'list.dropBetweenBackground': withAlpha(palette.fg, '1a'),
+    'list.focusBackground': withAlpha(palette.fg, '26'),
+    'list.focusForeground': palette.fg,
+    'list.highlightForeground': palette.accent,
+    'list.hoverBackground': palette.chrome,
+    'list.hoverForeground': palette.fgBright,
+    'list.inactiveSelectionBackground': withAlpha(palette.fg, '1a'),
+    'list.inactiveSelectionForeground': palette.accent,
+    'list.inactiveSelectionIconForeground': palette.accent,
 
     // listFilterWidget
-    'listFilterWidget.background': a(p.fg, '1a'),
-    'listFilterWidget.noMatchesOutline': a(p.fg, '1a'),
-    'listFilterWidget.outline': a(p.fg, '1a'),
+    'listFilterWidget.background': withAlpha(palette.fg, '1a'),
+    'listFilterWidget.noMatchesOutline': withAlpha(palette.fg, '1a'),
+    'listFilterWidget.outline': withAlpha(palette.fg, '1a'),
 
     // menu
-    'menu.background': p.chrome,
-    'menu.border': p.bgAlt,
-    'menu.foreground': p.fg,
-    'menu.selectionBackground': a(p.surfaceAlt, '99'),
-    'menu.selectionBorder': a(p.fg, '1a'),
-    'menu.selectionForeground': p.accent,
-    'menu.separatorBackground': p.fg,
+    'menu.background': palette.chrome,
+    'menu.border': palette.bgAlt,
+    'menu.foreground': palette.fg,
+    'menu.selectionBackground': withAlpha(palette.surfaceAlt, '99'),
+    'menu.selectionBorder': withAlpha(palette.fg, '1a'),
+    'menu.selectionForeground': palette.accent,
+    'menu.separatorBackground': palette.fg,
 
     // menubar
-    'menubar.selectionBackground': a(p.fg, '1a'),
-    'menubar.selectionBorder': a(p.fg, '1a'),
-    'menubar.selectionForeground': p.accent,
+    'menubar.selectionBackground': withAlpha(palette.fg, '1a'),
+    'menubar.selectionBorder': withAlpha(palette.fg, '1a'),
+    'menubar.selectionForeground': palette.accent,
 
     // merge
-    'merge.border': a(p.bg, '00'),
-    'merge.currentHeaderBackground': a(p.green, '4d'),
-    'merge.incomingHeaderBackground': a(p.blue, '4d'),
+    'merge.border': withAlpha(palette.bg, '00'),
+    'merge.currentHeaderBackground': withAlpha(palette.green, '4d'),
+    'merge.incomingHeaderBackground': withAlpha(palette.blue, '4d'),
 
     // notebook
-    'notebook.focusedCellBorder': p.accent,
-    'notebook.inactiveFocusedCellBorder': a(p.accent, '80'),
+    'notebook.focusedCellBorder': palette.accent,
+    'notebook.inactiveFocusedCellBorder': withAlpha(palette.accent, '80'),
 
     // notificationLink
-    'notificationLink.foreground': p.accent,
+    'notificationLink.foreground': palette.accent,
 
     // notificationToast
-    'notificationToast.border': a(p.hairline, '0f'),
+    'notificationToast.border': withAlpha(palette.hairline, '0f'),
 
     // notifications
-    'notifications.background': p.chrome,
-    'notifications.foreground': p.fg,
+    'notifications.background': palette.chrome,
+    'notifications.foreground': palette.fg,
 
     // notificationsWarningIcon
-    'notificationsWarningIcon.foreground': p.yellow,
+    'notificationsWarningIcon.foreground': palette.yellow,
 
     // panel
-    'panel.background': a(p.chrome, 'ff'),
-    'panel.border': a(p.border, '99'),
+    'panel.background': withAlpha(palette.chrome, 'ff'),
+    'panel.border': withAlpha(palette.border, '99'),
 
     // panelSection
-    'panelSection.dropBackground': a(p.fg, '1a'),
+    'panelSection.dropBackground': withAlpha(palette.fg, '1a'),
 
     // panelTitle
-    'panelTitle.activeBorder': p.accent,
-    'panelTitle.activeForeground': p.fg,
-    'panelTitle.inactiveForeground': a(p.fg, '66'),
+    'panelTitle.activeBorder': palette.accent,
+    'panelTitle.activeForeground': palette.fg,
+    'panelTitle.inactiveForeground': withAlpha(palette.fg, '66'),
 
     // peekView
-    'peekView.border': a(p.black, '4d'),
+    'peekView.border': withAlpha(palette.black, '4d'),
 
     // peekViewEditor
-    'peekViewEditor.background': p.surface,
-    'peekViewEditor.matchHighlightBackground': p.accentDim,
+    'peekViewEditor.background': palette.surface,
+    'peekViewEditor.matchHighlightBackground': palette.accentDim,
 
     // peekViewEditorGutter
-    'peekViewEditorGutter.background': p.surface,
+    'peekViewEditorGutter.background': palette.surface,
 
     // peekViewResult
-    'peekViewResult.background': p.surface,
-    'peekViewResult.matchHighlightBackground': p.accentDim,
-    'peekViewResult.selectionBackground': a(p.fgMuted, 'b3'),
+    'peekViewResult.background': palette.surface,
+    'peekViewResult.matchHighlightBackground': palette.accentDim,
+    'peekViewResult.selectionBackground': withAlpha(palette.fgMuted, 'b3'),
 
     // peekViewTitle
-    'peekViewTitle.background': p.surface,
+    'peekViewTitle.background': palette.surface,
 
     // peekViewTitleDescription
-    'peekViewTitleDescription.foreground': a(p.fg, '99'),
+    'peekViewTitleDescription.foreground': withAlpha(palette.fg, '99'),
 
     // pickerGroup
-    'pickerGroup.border': p.border,
-    'pickerGroup.foreground': p.accent,
+    'pickerGroup.border': palette.border,
+    'pickerGroup.foreground': palette.accent,
 
     // progressBar
-    'progressBar.background': p.accent,
+    'progressBar.background': palette.accent,
 
     // quickInput
-    'quickInput.background': a(p.chrome, 'ff'),
-    'quickInput.foreground': p.fgMuted,
+    'quickInput.background': withAlpha(palette.chrome, 'ff'),
+    'quickInput.foreground': palette.fgMuted,
 
     // quickInputList
-    'quickInputList.focusBackground': a(p.fg, '26'),
-    'quickInputList.focusIconForeground': p.fg,
+    'quickInputList.focusBackground': withAlpha(palette.fg, '26'),
+    'quickInputList.focusIconForeground': palette.fg,
 
     // quickInputTitle
-    'quickInputTitle.background': p.chrome,
+    'quickInputTitle.background': palette.chrome,
 
     // sash
-    'sash.hoverBorder': a(p.accent, '80'),
+    'sash.hoverBorder': withAlpha(palette.accent, '80'),
 
     // scrollbar
-    'scrollbar.shadow': a(p.black, '4d'),
+    'scrollbar.shadow': withAlpha(palette.black, '4d'),
 
     // scrollbarSlider
-    'scrollbarSlider.activeBackground': p.accent,
-    'scrollbarSlider.background': a(p.fgSlider, '21'),
-    'scrollbarSlider.hoverBackground': a(p.fgSlider, '2e'),
+    'scrollbarSlider.activeBackground': palette.accent,
+    'scrollbarSlider.background': withAlpha(palette.fgSlider, '21'),
+    'scrollbarSlider.hoverBackground': withAlpha(palette.fgSlider, '2e'),
 
     // selection
-    'selection.background': p.accent,
+    'selection.background': palette.accent,
 
     // settings
-    'settings.checkboxBackground': p.chrome,
-    'settings.checkboxForeground': p.fg,
-    'settings.dropdownBackground': p.chrome,
-    'settings.dropdownForeground': p.fg,
-    'settings.headerForeground': p.fg,
-    'settings.modifiedItemIndicator': p.accent,
-    'settings.numberInputBackground': p.chrome,
-    'settings.numberInputForeground': p.fg,
-    'settings.textInputBackground': p.chrome,
-    'settings.textInputForeground': p.fg,
+    'settings.checkboxBackground': palette.chrome,
+    'settings.checkboxForeground': palette.fg,
+    'settings.dropdownBackground': palette.chrome,
+    'settings.dropdownForeground': palette.fg,
+    'settings.headerForeground': palette.fg,
+    'settings.modifiedItemIndicator': palette.accent,
+    'settings.numberInputBackground': palette.chrome,
+    'settings.numberInputForeground': palette.fg,
+    'settings.textInputBackground': palette.chrome,
+    'settings.textInputForeground': palette.fg,
 
     // sideBar
-    'sideBar.background': p.chrome,
-    'sideBar.border': a(p.border, '99'),
-    'sideBar.foreground': p.fgMuted,
+    'sideBar.background': palette.chrome,
+    'sideBar.border': withAlpha(palette.border, '99'),
+    'sideBar.foreground': palette.fgMuted,
 
     // sideBarActivityBarTop
-    'sideBarActivityBarTop.border': a(p.border, '99'),
+    'sideBarActivityBarTop.border': withAlpha(palette.border, '99'),
 
     // sideBarSectionHeader
-    'sideBarSectionHeader.background': p.chrome,
-    'sideBarSectionHeader.border': a(p.border, '99'),
+    'sideBarSectionHeader.background': palette.chrome,
+    'sideBarSectionHeader.border': withAlpha(palette.border, '99'),
 
     // sideBarStickyScroll
-    'sideBarStickyScroll.border': a(p.border, '99'),
+    'sideBarStickyScroll.border': withAlpha(palette.border, '99'),
 
     // sideBarTitle
-    'sideBarTitle.foreground': p.fg,
+    'sideBarTitle.foreground': palette.fg,
 
     // statusBar
-    'statusBar.background': p.chrome,
-    'statusBar.border': a(p.border, '99'),
-    'statusBar.debuggingBackground': a(p.accent, '1a'),
-    'statusBar.debuggingForeground': p.accent,
+    'statusBar.background': palette.chrome,
+    'statusBar.border': withAlpha(palette.border, '99'),
+    'statusBar.debuggingBackground': withAlpha(palette.accent, '1a'),
+    'statusBar.debuggingForeground': palette.accent,
     // fgUi, not fgMuted: status bar text conveys live information and must
     // clear WCAG AA. The muted ramp is tuned for mood and can fall below it.
-    'statusBar.foreground': p.fgUi,
-    'statusBar.noFolderBackground': p.chrome,
+    'statusBar.foreground': palette.fgUi,
+    'statusBar.noFolderBackground': palette.chrome,
 
     // statusBarItem
-    'statusBarItem.hoverBackground': a(p.fgSubtle, '33'),
-    'statusBarItem.remoteBackground': a(p.accent, '14'),
-    'statusBarItem.remoteForeground': p.accent,
-    'statusBarItem.remoteHoverBackground': p.accent,
-    'statusBarItem.remoteHoverForeground': p.onAccent,
+    'statusBarItem.hoverBackground': withAlpha(palette.fgSubtle, '33'),
+    'statusBarItem.remoteBackground': withAlpha(palette.accent, '14'),
+    'statusBarItem.remoteForeground': palette.accent,
+    'statusBarItem.remoteHoverBackground': palette.accent,
+    'statusBarItem.remoteHoverForeground': palette.onAccent,
 
     // tab
-    'tab.activeBackground': p.bg,
-    'tab.activeBorder': p.accent,
-    'tab.activeBorderTop': a(p.accent, '00'),
-    'tab.activeForeground': p.fgBright,
-    'tab.activeModifiedBorder': a(p.accent, '00'),
-    'tab.border': p.bg,
-    'tab.inactiveBackground': p.bg,
-    'tab.inactiveForeground': p.fgMuted,
-    'tab.unfocusedActiveBorder': p.accent,
-    'tab.unfocusedActiveBorderTop': a(p.fgSubtle, '00'),
-    'tab.unfocusedActiveForeground': p.fg,
+    'tab.activeBackground': palette.bg,
+    'tab.activeBorder': palette.accent,
+    'tab.activeBorderTop': withAlpha(palette.accent, '00'),
+    'tab.activeForeground': palette.fgBright,
+    'tab.activeModifiedBorder': withAlpha(palette.accent, '00'),
+    'tab.border': palette.bg,
+    'tab.inactiveBackground': palette.bg,
+    'tab.inactiveForeground': palette.fgMuted,
+    'tab.unfocusedActiveBorder': palette.accent,
+    'tab.unfocusedActiveBorderTop': withAlpha(palette.fgSubtle, '00'),
+    'tab.unfocusedActiveForeground': palette.fg,
 
     // terminal
-    'terminal.ansiBlack': p.black,
-    'terminal.ansiBlue': p.blue,
-    'terminal.ansiBrightBlack': p.fgSubtle,
-    'terminal.ansiBrightBlue': p.blue,
-    'terminal.ansiBrightCyan': p.cyan,
-    'terminal.ansiBrightGreen': p.green,
-    'terminal.ansiBrightMagenta': p.purple,
-    'terminal.ansiBrightRed': p.red,
-    'terminal.ansiBrightWhite': p.white,
-    'terminal.ansiBrightYellow': p.yellow,
-    'terminal.ansiCyan': p.cyan,
-    'terminal.ansiGreen': p.green,
-    'terminal.ansiMagenta': p.purple,
-    'terminal.ansiRed': p.red,
-    'terminal.ansiWhite': p.white,
-    'terminal.ansiYellow': p.yellow,
+    'terminal.ansiBlack': palette.black,
+    'terminal.ansiBlue': palette.blue,
+    'terminal.ansiBrightBlack': palette.fgSubtle,
+    'terminal.ansiBrightBlue': palette.blue,
+    'terminal.ansiBrightCyan': palette.cyan,
+    'terminal.ansiBrightGreen': palette.green,
+    'terminal.ansiBrightMagenta': palette.purple,
+    'terminal.ansiBrightRed': palette.red,
+    'terminal.ansiBrightWhite': palette.white,
+    'terminal.ansiBrightYellow': palette.yellow,
+    'terminal.ansiCyan': palette.cyan,
+    'terminal.ansiGreen': palette.green,
+    'terminal.ansiMagenta': palette.purple,
+    'terminal.ansiRed': palette.red,
+    'terminal.ansiWhite': palette.white,
+    'terminal.ansiYellow': palette.yellow,
 
     // terminalCommandGuide
-    'terminalCommandGuide.foreground': p.guide,
+    'terminalCommandGuide.foreground': palette.guide,
 
     // terminalCursor
-    'terminalCursor.background': p.black,
-    'terminalCursor.foreground': p.yellow,
+    'terminalCursor.background': palette.black,
+    'terminalCursor.foreground': palette.yellow,
 
     // textLink
-    'textLink.activeForeground': p.fg,
-    'textLink.foreground': p.accent,
+    'textLink.activeForeground': palette.fg,
+    'textLink.foreground': palette.accent,
 
     // textPreformat
-    'textPreformat.background': a(p.surfaceAlt, '99'),
-    'textPreformat.foreground': a(p.fg, 'b3'),
+    'textPreformat.background': withAlpha(palette.surfaceAlt, '99'),
+    'textPreformat.foreground': withAlpha(palette.fg, 'b3'),
 
     // titleBar
-    'titleBar.activeBackground': p.chrome,
-    'titleBar.activeForeground': p.fg,
-    'titleBar.border': a(p.border, '99'),
-    'titleBar.inactiveBackground': p.chrome,
-    'titleBar.inactiveForeground': p.fgMuted,
+    'titleBar.activeBackground': palette.chrome,
+    'titleBar.activeForeground': palette.fg,
+    'titleBar.border': withAlpha(palette.border, '99'),
+    'titleBar.inactiveBackground': palette.chrome,
+    'titleBar.inactiveForeground': palette.fgMuted,
 
     // toolbar
-    'toolbar.activeBackground': a(p.accent, '26'),
-    'toolbar.hoverBackground': a(p.fg, '1a'),
+    'toolbar.activeBackground': withAlpha(palette.accent, '26'),
+    'toolbar.hoverBackground': withAlpha(palette.fg, '1a'),
 
     // tree
-    'tree.indentGuidesStroke': p.guide,
+    'tree.indentGuidesStroke': palette.guide,
 
     // widget
-    'widget.border': a(p.hairline, '0f'),
-    'widget.shadow': a(p.black, '4d'),
+    'widget.border': withAlpha(palette.hairline, '0f'),
+    'widget.shadow': withAlpha(palette.black, '4d'),
   }
 }

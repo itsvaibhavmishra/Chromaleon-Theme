@@ -37,7 +37,7 @@ export async function syncFolderSet(iconsDir: string, style: FolderSync): Promis
   const sourceDir = join(root, FOLDER_SOURCE)
   const targetDir = join(root, id)
 
-  const names = (await readdir(sourceDir)).filter((f) => f.endsWith('.svg'))
+  const names = (await readdir(sourceDir)).filter((name) => name.endsWith('.svg'))
   const existing = await readdir(targetDir).catch(() => [] as string[])
 
   if (existing.length !== names.length) {

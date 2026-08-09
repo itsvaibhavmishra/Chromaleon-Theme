@@ -1,24 +1,24 @@
 import type { Palette } from '@/core/palette'
 
-export function semantic(p: Palette, _italics: boolean): Record<string, unknown> {
+export function semantic(palette: Palette, _italics: boolean): Record<string, unknown> {
   return {
-    variable: p.fg,
-    'variable.constant': p.fg,
-    'variable.readonly': p.fg,
-    'parameter.declaration': p.fg,
-    'variable.defaultLibrary': p.fg,
-    type: p.yellow,
-    typeParameter: p.orange,
-    function: p.blue,
-    comment: p.fgSubtle,
-    enumMember: p.fg,
-    class: p.blue,
-    'class.declaration': p.blue,
-    'class.typeHint.builtin': p.yellow,
-    number: p.orange,
-    string: p.green,
-    module: p.yellow,
-    selfParameter: p.fgAlt,
-    'selfParameter.declaration': p.fgAlt,
+    variable: palette.fg,
+    'variable.constant': palette.fg,
+    'variable.readonly': palette.fg,
+    'parameter.declaration': palette.fg,
+    'variable.defaultLibrary': palette.fg,
+    type: palette.yellow,
+    typeParameter: palette.orange,
+    function: palette.blue,
+    comment: palette.fgSubtle,
+    enumMember: palette.fg,
+    class: palette.blue,
+    'class.declaration': palette.blue,
+    'class.typeHint.builtin': palette.yellow,
+    number: palette.orange,
+    string: palette.green,
+    module: palette.yellow,
+    selfParameter: palette.fgAlt,
+    'selfParameter.declaration': palette.fgAlt,
   }
 }

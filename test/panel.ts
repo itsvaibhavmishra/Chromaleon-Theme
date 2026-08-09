@@ -221,8 +221,8 @@ console.log('\npreviewing')
 console.log('\nroles and contrast')
 {
   const view = derive(panel(), null, null, null)
-  check('counts keys and scopes together', view.roles.find((r) => r.id === 'fg')?.count, 2)
-  check('backgrounds carry no ratio', view.roles.find((r) => r.id === 'bg')?.ratio, undefined)
+  check('counts keys and scopes together', view.roles.find((role) => role.id === 'fg')?.count, 2)
+  check('backgrounds carry no ratio', view.roles.find((role) => role.id === 'bg')?.ratio, undefined)
   checkThat(
     'and everything with a floor is measured',
     view.measured === 3 && view.failing === 0,
@@ -234,12 +234,12 @@ console.log('\nroles and contrast')
 
   check(
     'an edited role says so',
-    derive(panel(), null, { fg: '#ffffff' }, null).roles.find((r) => r.id === 'fg')?.edited,
+    derive(panel(), null, { fg: '#ffffff' }, null).roles.find((role) => role.id === 'fg')?.edited,
     true,
   )
   check(
     'an untouched one does not',
-    derive(panel(), null, null, null).roles.find((r) => r.id === 'fg')?.edited,
+    derive(panel(), null, null, null).roles.find((role) => role.id === 'fg')?.edited,
     false,
   )
   // The accent setting replaces the role, so the panel shows what actually renders.
@@ -259,12 +259,12 @@ console.log('\na preset someone edited by hand')
   check('an unparseable colour is dropped', view.edits, { green: '#00ff00' })
   check(
     'and the role falls back to the theme',
-    view.roles.find((r) => r.id === 'fg')?.value,
+    view.roles.find((role) => role.id === 'fg')?.value,
     OBSIDIAN.fg,
   )
   check(
     'the rest of the preset still applies',
-    view.roles.find((r) => r.id === 'green')?.value,
+    view.roles.find((role) => role.id === 'green')?.value,
     '#00ff00',
   )
 }

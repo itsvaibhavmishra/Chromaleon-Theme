@@ -110,11 +110,11 @@ export function Canvas({ palette, collapsed, showTerminal, selected, onPick }: P
   return (
     <div class="canvas" style={vars} onClick={pick}>
       <div {...paint('chrome', 'cv-activity')}>
-        {ICONS.map((glyph, i) => (
+        {ICONS.map((glyph, iconIndex) => (
           <svg
-            key={i}
+            key={iconIndex}
             viewBox="0 0 16 16"
-            {...(i === 0 ? paint('fg', 'cv-icon cv-icon-on') : paint('fgMuted', 'cv-icon'))}
+            {...(iconIndex === 0 ? paint('fg', 'cv-icon cv-icon-on') : paint('fgMuted', 'cv-icon'))}
             fill="none"
             stroke="currentColor"
             stroke-width="1.2"
@@ -154,20 +154,24 @@ export function Canvas({ palette, collapsed, showTerminal, selected, onPick }: P
         <div {...paint('fgMuted', 'cv-crumbs')}>src &rsaquo; roles.ts &rsaquo; ROLES</div>
 
         <div class="cv-editor">
-          {SAMPLE.map((line, i) => (
+          {SAMPLE.map((line, lineIndex) => (
             <div
-              key={i}
+              key={lineIndex}
               {...(line.current
                 ? paint('surfaceAlt', 'cv-line cv-line-on')
                 : paint('bg', 'cv-line'))}
             >
-              <span {...paint('lineNumber', 'cv-num')}>{i + 1}</span>
+              <span {...paint('lineNumber', 'cv-num')}>{lineIndex + 1}</span>
               <span class="cv-code">
                 {Array.from({ length: line.indent }, (_, level) => (
                   <span key={level} {...paint('guide', 'cv-guide')} />
                 ))}
-                {line.spans.map((span, j) => (
-                  <span key={j} {...paint(span.role)} style={{ color: `var(--r-${span.role})` }}>
+                {line.spans.map((span, spanIndex) => (
+                  <span
+                    key={spanIndex}
+                    {...paint(span.role)}
+                    style={{ color: `var(--r-${span.role})` }}
+                  >
                     {span.text}
                   </span>
                 ))}

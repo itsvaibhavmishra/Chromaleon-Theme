@@ -34,17 +34,17 @@ const DEFAULT_ACCENT = JSON.parse(
   fs.readFileSync(path.join(ROOT, 'themes', 'Chromaleon-Woad.json'), 'utf8'),
 ).colors['button.background']
 
-function contrast(a, b) {
-  const lum = (h) => {
-    const n = parseInt(h.slice(1, 7), 16)
-    const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
-      const c = v / 255
-      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+function contrast(first, second) {
+  const lum = (hex) => {
+    const packed = parseInt(hex.slice(1, 7), 16)
+    const ch = [(packed >> 16) & 255, (packed >> 8) & 255, packed & 255].map((channel) => {
+      const fraction = channel / 255
+      return fraction <= 0.03928 ? fraction / 12.92 : ((fraction + 0.055) / 1.055) ** 2.4
     })
     return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2]
   }
-  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x)
-  return (hi + 0.05) / (lo + 0.05)
+  const [lighter, darker] = [lum(first), lum(second)].sort((left, right) => right - left)
+  return (lighter + 0.05) / (darker + 0.05)
 }
 
 let passed = 0
@@ -140,21 +140,22 @@ async function run(
   vscode.workspace.getConfiguration = (section) =>
     section === 'chromaleon'
       ? {
-          get: (k, d) => (k in chromaleon ? chromaleon[k] : d),
+          get: (key, fallback) => (key in chromaleon ? chromaleon[key] : fallback),
           // undefined removes rather than stores, as VS Code does. Storing it would make a
           // reset look like it wrote seventeen undefined values.
-          update: async (k, v) => {
-            if (v === undefined) delete chromaleon[k]
-            else chromaleon[k] = v
+          update: async (key, value) => {
+            if (value === undefined) delete chromaleon[key]
+            else chromaleon[key] = value
           },
         }
       : {
-          get: (k, d) => (k in ws ? ws[k] : k in settings ? settings[k] : d),
-          inspect: (k) => ({ key: k, globalValue: settings[k], workspaceValue: ws[k] }),
-          update: async (k, v, target) => {
-            const store = target === 2 ? ws : settings
-            if (v === undefined) delete store[k]
-            else store[k] = v
+          get: (key, fallback) =>
+            key in ws ? ws[key] : key in settings ? settings[key] : fallback,
+          inspect: (key) => ({ key, globalValue: settings[key], workspaceValue: ws[key] }),
+          update: async (key, value, target) => {
+            const scopeStore = target === 2 ? ws : settings
+            if (value === undefined) delete scopeStore[key]
+            else scopeStore[key] = value
           },
         }
   // Opening on activation would pop a panel in everyone's face on every window, so here it
@@ -179,8 +180,8 @@ async function run(
     extension: { packageJSON: { version: '0.0.0-test', ...MANIFEST } },
     subscriptions: [],
     globalState: {
-      get: (k, d) => (store.has(k) ? store.get(k) : d),
-      update: async (k, v) => void store.set(k, v),
+      get: (key, fallback) => (store.has(key) ? store.get(key) : fallback),
+      update: async (key, value) => void store.set(key, value),
       setKeysForSync: () => {},
     },
   })
@@ -215,175 +216,182 @@ async function run(
 ;(async () => {
   console.log('\ndefaults')
   {
-    const r = await run({})
-    check('writes no colour overrides', r.scopes, [])
-    check('writes no token overrides', r.tokens, undefined)
-    check('switches icon theme', r.iconTheme, 'chromaleon-icons')
-    check('shows explorer arrows by default', r.iconThemeJson.hidesExplorerArrows, false)
+    const result = await run({})
+    check('writes no colour overrides', result.scopes, [])
+    check('writes no token overrides', result.tokens, undefined)
+    check('switches icon theme', result.iconTheme, 'chromaleon-icons')
+    check('shows explorer arrows by default', result.iconThemeJson.hidesExplorerArrows, false)
     checkThat(
       "keeps Material's folder colours",
-      !r.folderSvg.includes(DEFAULT_ACCENT),
+      !result.folderSvg.includes(DEFAULT_ACCENT),
       'folder was tinted with the accent when accentFolders is off',
     )
   }
 
   console.log('\naccent')
   {
-    const r = await run({ accent: 'Purple' })
-    check('repaints button background', r.colors['button.background'], '#b583db')
+    const result = await run({ accent: 'Purple' })
+    check('repaints button background', result.colors['button.background'], '#b583db')
     checkThat(
       'repaints all accent keys',
-      Object.keys(r.colors).length === 57,
-      `${Object.keys(r.colors).length} keys`,
+      Object.keys(result.colors).length === 57,
+      `${Object.keys(result.colors).length} keys`,
     )
-    check('scopes overrides to the active theme', r.scopes, ['[Chromaleon Woad]'])
-    check('picks black on a light accent', r.colors['button.foreground'], '#000000')
+    check('scopes overrides to the active theme', result.scopes, ['[Chromaleon Woad]'])
+    check('picks black on a light accent', result.colors['button.foreground'], '#000000')
   }
   {
-    const r = await run({ accent: 'Chromaleon' })
-    check('default accent is a no-op', r.scopes, [])
+    const result = await run({ accent: 'Chromaleon' })
+    check('default accent is a no-op', result.scopes, [])
   }
   {
-    const r = await run({ customAccent: '#ff0000', accent: 'Purple' })
-    check('customAccent overrides the named accent', r.colors['button.background'], '#ff0000')
+    const result = await run({ customAccent: '#ff0000', accent: 'Purple' })
+    check('customAccent overrides the named accent', result.colors['button.background'], '#ff0000')
   }
   {
-    const r = await run({ customAccent: 'nonsense', accent: 'Purple' })
-    check('invalid customAccent falls back', r.colors['button.background'], '#b583db')
+    const result = await run({ customAccent: 'nonsense', accent: 'Purple' })
+    check('invalid customAccent falls back', result.colors['button.background'], '#b583db')
   }
   {
-    const r = await run({ customAccent: '#101010' })
-    check('picks white on a very dark accent', r.colors['button.foreground'], '#ffffff')
+    const result = await run({ customAccent: '#101010' })
+    check('picks white on a very dark accent', result.colors['button.foreground'], '#ffffff')
   }
 
   console.log('\naccentedStatusBar')
   {
-    const r = await run({ accentedStatusBar: true })
-    check('paints the status bar', r.colors['statusBar.background'], DEFAULT_ACCENT)
+    const result = await run({ accentedStatusBar: true })
+    check('paints the status bar', result.colors['statusBar.background'], DEFAULT_ACCENT)
     checkThat(
       'keeps status bar text legible on it',
-      contrast(r.colors['statusBar.background'], r.colors['statusBar.foreground']) >= 4.5,
-      `${contrast(r.colors['statusBar.background'], r.colors['statusBar.foreground']).toFixed(2)}:1`,
+      contrast(result.colors['statusBar.background'], result.colors['statusBar.foreground']) >= 4.5,
+      `${contrast(result.colors['statusBar.background'], result.colors['statusBar.foreground']).toFixed(2)}:1`,
     )
   }
   {
-    const r = await run({ accentedStatusBar: true, accent: 'Purple' })
-    check('follows the chosen accent', r.colors['statusBar.background'], '#b583db')
-    check('flips its text to black on a light accent', r.colors['statusBar.foreground'], '#000000')
+    const result = await run({ accentedStatusBar: true, accent: 'Purple' })
+    check('follows the chosen accent', result.colors['statusBar.background'], '#b583db')
+    check(
+      'flips its text to black on a light accent',
+      result.colors['statusBar.foreground'],
+      '#000000',
+    )
   }
 
   console.log('\nselectionStyle')
   {
     const base = await run({})
-    const r = await run({ selectionStyle: 'accent' })
+    const result = await run({ selectionStyle: 'accent' })
     checkThat(
       'retints selection onto the accent',
-      r.colors['editor.selectionBackground'] !== undefined,
+      result.colors['editor.selectionBackground'] !== undefined,
       'nothing written',
     )
     checkThat(
       'differs from the room-hue default',
-      r.colors['editor.selectionBackground'] !== base.colors['editor.selectionBackground'],
+      result.colors['editor.selectionBackground'] !== base.colors['editor.selectionBackground'],
       'identical to default',
     )
   }
   {
-    const r = await run({ selectionStyle: 'room' })
-    check('room is the no-op default', r.scopes, [])
+    const result = await run({ selectionStyle: 'room' })
+    check('room is the no-op default', result.scopes, [])
   }
 
   console.log('\ncursorStyle')
   {
-    const r = await run({ cursorStyle: 'accent' })
-    check('uses the accent', r.colors['editorCursor.foreground'], DEFAULT_ACCENT)
+    const result = await run({ cursorStyle: 'accent' })
+    check('uses the accent', result.colors['editorCursor.foreground'], DEFAULT_ACCENT)
   }
   {
-    const r = await run({ cursorStyle: 'theme' })
-    check('theme is the no-op default', r.scopes, [])
+    const result = await run({ cursorStyle: 'theme' })
+    check('theme is the no-op default', result.scopes, [])
   }
 
   console.log('\nitalics')
   {
-    const r = await run({ italics: false })
+    const result = await run({ italics: false })
     checkThat(
       'emits textMateRules',
-      Array.isArray(r.tokens?.textMateRules),
-      JSON.stringify(r.tokens),
+      Array.isArray(result.tokens?.textMateRules),
+      JSON.stringify(result.tokens),
     )
     checkThat(
       'clears fontStyle on every italic scope',
-      r.tokens?.textMateRules?.every((rule) => rule.settings.fontStyle === ''),
+      result.tokens?.textMateRules?.every((rule) => rule.settings.fontStyle === ''),
       'a rule kept its italic style',
     )
     checkThat(
       'covers more than one scope',
-      (r.tokens?.textMateRules?.length ?? 0) >= 5,
-      `${r.tokens?.textMateRules?.length} scopes`,
+      (result.tokens?.textMateRules?.length ?? 0) >= 5,
+      `${result.tokens?.textMateRules?.length} scopes`,
     )
   }
   {
-    const r = await run({ italics: true })
-    check('on is the no-op default', r.tokens, undefined)
+    const result = await run({ italics: true })
+    check('on is the no-op default', result.tokens, undefined)
   }
 
   console.log('\ncurrentLine')
   {
-    const r = await run({ currentLine: 'solid' })
+    const result = await run({ currentLine: 'solid' })
     checkThat(
       'fills the line and drops the outline',
-      r.colors['editor.lineHighlightBorder'] === '#00000000' &&
-        r.colors['editor.lineHighlightBackground'] !== '#00000000',
-      JSON.stringify(r.colors),
+      result.colors['editor.lineHighlightBorder'] === '#00000000' &&
+        result.colors['editor.lineHighlightBackground'] !== '#00000000',
+      JSON.stringify(result.colors),
     )
   }
   {
-    const r = await run({ currentLine: 'none' })
+    const result = await run({ currentLine: 'none' })
     check(
       'none clears both',
-      [r.colors['editor.lineHighlightBackground'], r.colors['editor.lineHighlightBorder']],
+      [
+        result.colors['editor.lineHighlightBackground'],
+        result.colors['editor.lineHighlightBorder'],
+      ],
       ['#00000000', '#00000000'],
     )
   }
   {
-    const r = await run({ currentLine: 'outline' })
-    check('outline is the no-op default', r.scopes, [])
+    const result = await run({ currentLine: 'outline' })
+    check('outline is the no-op default', result.scopes, [])
   }
 
   console.log('\ntabIndicator')
   {
-    const r = await run({ tabIndicator: 'top' })
+    const result = await run({ tabIndicator: 'top' })
     check(
       'moves to the top edge',
-      [r.colors['tab.activeBorderTop'], r.colors['tab.activeBorder']],
+      [result.colors['tab.activeBorderTop'], result.colors['tab.activeBorder']],
       [DEFAULT_ACCENT, '#00000000'],
     )
   }
   {
-    const r = await run({ tabIndicator: 'none' })
+    const result = await run({ tabIndicator: 'none' })
     check(
       'none clears both edges',
-      [r.colors['tab.activeBorderTop'], r.colors['tab.activeBorder']],
+      [result.colors['tab.activeBorderTop'], result.colors['tab.activeBorder']],
       ['#00000000', '#00000000'],
     )
   }
   {
-    const r = await run({ tabIndicator: 'bottom' })
-    check('bottom is the no-op default', r.scopes, [])
+    const result = await run({ tabIndicator: 'bottom' })
+    check('bottom is the no-op default', result.scopes, [])
   }
 
   console.log('\ntabBar')
   {
-    const r = await run({ tabBar: 'contrasted' })
+    const result = await run({ tabBar: 'contrasted' })
     checkThat(
       'darkens the tab bar',
-      r.colors['editorGroupHeader.tabsBackground'] !== undefined &&
-        r.colors['editorGroupHeader.tabsBackground'] !== '#11131d',
-      r.colors['editorGroupHeader.tabsBackground'],
+      result.colors['editorGroupHeader.tabsBackground'] !== undefined &&
+        result.colors['editorGroupHeader.tabsBackground'] !== '#11131d',
+      result.colors['editorGroupHeader.tabsBackground'],
     )
   }
   {
-    const r = await run({ tabBar: 'flat' })
-    check('flat is the no-op default', r.scopes, [])
+    const result = await run({ tabBar: 'flat' })
+    check('flat is the no-op default', result.scopes, [])
   }
 
   console.log('\nborders')
@@ -403,44 +411,52 @@ async function run(
     )
   }
   {
-    const r = await run({ borders: 'none' })
-    check('none is the no-op default', r.scopes, [])
+    const result = await run({ borders: 'none' })
+    check('none is the no-op default', result.scopes, [])
   }
   {
     // An accented status bar must keep its own edge rather than a grey one.
-    const r = await run({ borders: 'strong', accentedStatusBar: true })
-    check('accented status bar keeps its own border', r.colors['statusBar.border'], DEFAULT_ACCENT)
+    const result = await run({ borders: 'strong', accentedStatusBar: true })
+    check(
+      'accented status bar keeps its own border',
+      result.colors['statusBar.border'],
+      DEFAULT_ACCENT,
+    )
   }
 
   console.log('\nshadows')
   {
-    const r = await run({ shadows: false })
+    const result = await run({ shadows: false })
     check(
       'clears the shadows',
-      [r.colors['widget.shadow'], r.colors['scrollbar.shadow']],
+      [result.colors['widget.shadow'], result.colors['scrollbar.shadow']],
       ['#00000000', '#00000000'],
     )
   }
   {
-    const r = await run({ shadows: true })
-    check('on is the no-op default', r.scopes, [])
+    const result = await run({ shadows: true })
+    check('on is the no-op default', result.scopes, [])
   }
 
   console.log('\nicons')
   {
-    const r = await run({ accentFolders: true, accent: 'Tomato' })
-    checkThat('tints folder icons', r.folderSvg.includes('#ff5c57'), r.folderSvg.slice(0, 90))
+    const result = await run({ accentFolders: true, accent: 'Tomato' })
+    checkThat(
+      'tints folder icons',
+      result.folderSvg.includes('#ff5c57'),
+      result.folderSvg.slice(0, 90),
+    )
     checkThat(
       'keeps the pale motive overlay distinct',
-      new Set(r.folderSvg.match(/fill="#[0-9a-f]{6}"/gi) ?? []).size === 2,
-      [...new Set(r.folderSvg.match(/fill="#[0-9a-f]{6}"/gi) ?? [])].join(' '),
+      new Set(result.folderSvg.match(/fill="#[0-9a-f]{6}"/gi) ?? []).size === 2,
+      [...new Set(result.folderSvg.match(/fill="#[0-9a-f]{6}"/gi) ?? [])].join(' '),
     )
   }
   {
-    const r = await run({ accentFolders: false })
+    const result = await run({ accentFolders: false })
     checkThat(
       'restores original colours when disabled',
-      !r.folderSvg.includes('#ff5c57'),
+      !result.folderSvg.includes('#ff5c57'),
       'stale tint left behind',
     )
   }
@@ -469,17 +485,17 @@ async function run(
     checkThat('old folder sets are cleaned up', dirs.length === 2, dirs.join(', '))
   }
   {
-    const r = await run({ hideExplorerArrows: true })
-    check('hiding arrows sets the flag', r.iconThemeJson.hidesExplorerArrows, true)
+    const result = await run({ hideExplorerArrows: true })
+    check('hiding arrows sets the flag', result.iconThemeJson.hidesExplorerArrows, true)
   }
   {
-    const r = await run({ syncIconTheme: false }, { iconTheme: 'vs-seti' })
-    check('leaves the icon theme alone', r.iconTheme, 'vs-seti')
+    const result = await run({ syncIconTheme: false }, { iconTheme: 'vs-seti' })
+    check('leaves the icon theme alone', result.iconTheme, 'vs-seti')
   }
   {
-    const r = await run({}, { theme: 'Default Dark+', iconTheme: 'vs-seti' })
-    check('does not hijack a non-Chromaleon theme', r.iconTheme, 'vs-seti')
-    check('writes nothing for a non-Chromaleon theme', r.scopes, [])
+    const result = await run({}, { theme: 'Default Dark+', iconTheme: 'vs-seti' })
+    check('does not hijack a non-Chromaleon theme', result.iconTheme, 'vs-seti')
+    check('writes nothing for a non-Chromaleon theme', result.scopes, [])
   }
 
   console.log('\nlight variant (Chalk)')
@@ -491,30 +507,30 @@ async function run(
       fs.readFileSync(path.join(ROOT, 'themes', 'Chromaleon-Chalk.json'), 'utf8'),
     ).colors['editor.background']
 
-    const b = await run({ borders: 'strong' }, { theme: LIGHT })
+    const borders = await run({ borders: 'strong' }, { theme: LIGHT })
     checkThat(
       'borders are visible on a light background',
-      contrast(bg, b.colors['sideBar.border']) >= 1.35,
-      `${b.colors['sideBar.border']} on ${bg} = ${contrast(bg, b.colors['sideBar.border']).toFixed(2)}:1`,
+      contrast(bg, borders.colors['sideBar.border']) >= 1.35,
+      `${borders.colors['sideBar.border']} on ${bg} = ${contrast(bg, borders.colors['sideBar.border']).toFixed(2)}:1`,
     )
 
-    const c = await run({ currentLine: 'solid' }, { theme: LIGHT })
+    const currentLine = await run({ currentLine: 'solid' }, { theme: LIGHT })
     checkThat(
       'the solid current line is visible',
-      c.colors['editor.lineHighlightBackground'] !== bg &&
-        contrast(bg, c.colors['editor.lineHighlightBackground']) > 1.01,
-      c.colors['editor.lineHighlightBackground'],
+      currentLine.colors['editor.lineHighlightBackground'] !== bg &&
+        contrast(bg, currentLine.colors['editor.lineHighlightBackground']) > 1.01,
+      currentLine.colors['editor.lineHighlightBackground'],
     )
 
-    const t = await run({ tabBar: 'contrasted' }, { theme: LIGHT })
+    const tabBar = await run({ tabBar: 'contrasted' }, { theme: LIGHT })
     checkThat(
       'the contrasted tab bar stays a shade of the paper, not a dark slab',
-      contrast(bg, t.colors['editorGroupHeader.tabsBackground']) < 2,
-      `${t.colors['editorGroupHeader.tabsBackground']} = ${contrast(bg, t.colors['editorGroupHeader.tabsBackground']).toFixed(2)}:1`,
+      contrast(bg, tabBar.colors['editorGroupHeader.tabsBackground']) < 2,
+      `${tabBar.colors['editorGroupHeader.tabsBackground']} = ${contrast(bg, tabBar.colors['editorGroupHeader.tabsBackground']).toFixed(2)}:1`,
     )
 
-    const d = await run({}, { theme: LIGHT })
-    check('an untouched light install writes nothing', d.scopes, [])
+    const untouched = await run({}, { theme: LIGHT })
+    check('an untouched light install writes nothing', untouched.scopes, [])
   }
 
   console.log('\npresets')
@@ -525,86 +541,97 @@ async function run(
       },
       activePresets: { 'Chromaleon Woad': 'p1' },
     }
-    const r = await run(on)
-    check('recolours the workbench keys the role paints', r.colors['terminal.ansiGreen'], '#00ff00')
-    check('including the translucent ones', r.colors['editorGutter.addedBackground'], '#00ff0099')
+    const result = await run(on)
+    check(
+      'recolours the workbench keys the role paints',
+      result.colors['terminal.ansiGreen'],
+      '#00ff00',
+    )
+    check(
+      'including the translucent ones',
+      result.colors['editorGutter.addedBackground'],
+      '#00ff0099',
+    )
     checkThat(
       'and every syntax scope, or the editor would not move',
-      (r.tokens?.textMateRules ?? []).some(
+      (result.tokens?.textMateRules ?? []).some(
         (rule) => rule.scope === 'string' && rule.settings.foreground === '#00ff00',
       ),
-      JSON.stringify(r.tokens?.textMateRules?.slice(0, 2)),
+      JSON.stringify(result.tokens?.textMateRules?.slice(0, 2)),
     )
     checkThat(
       'scopes it does not paint are left alone',
-      !(r.tokens?.textMateRules ?? []).some((rule) => rule.scope === 'comment'),
+      !(result.tokens?.textMateRules ?? []).some((rule) => rule.scope === 'comment'),
       'recoloured a scope belonging to another role',
     )
-    check('overrides are scoped to the theme they were made on', r.scopes, ['[Chromaleon Woad]'])
+    check('overrides are scoped to the theme they were made on', result.scopes, [
+      '[Chromaleon Woad]',
+    ])
   }
   {
     // 119 of the 279 workbench keys render their role below full opacity. Writing a flat hex
     // over those turns every border and hover state into a slab, and the value would still
     // look correct in settings.json.
-    const r = await run({
+    const result = await run({
       presets: { p1: { name: 'Preset 1', base: 'Chromaleon Woad', overrides: { fg: '#ff0000' } } },
       activePresets: { 'Chromaleon Woad': 'p1' },
     })
-    check('keeps the alpha the key renders at', r.colors['descriptionForeground'], '#ff0000cc')
-    check('and leaves opaque keys opaque', r.colors['editor.foreground'], '#ff0000')
+    check('keeps the alpha the key renders at', result.colors['descriptionForeground'], '#ff0000cc')
+    check('and leaves opaque keys opaque', result.colors['editor.foreground'], '#ff0000')
   }
   {
-    const r = await run({ roleOverrides: { 'Chromaleon Basalt': { fg: '#ff0000' } } })
-    check("another theme's overrides do not leak into this one", r.scopes, [])
+    const result = await run({ roleOverrides: { 'Chromaleon Basalt': { fg: '#ff0000' } } })
+    check("another theme's overrides do not leak into this one", result.scopes, [])
   }
   {
-    const r = await run({
+    const result = await run({
       italics: false,
       presets: {
         p1: { name: 'Preset 1', base: 'Chromaleon Woad', overrides: { green: '#00ff00' } },
       },
       activePresets: { 'Chromaleon Woad': 'p1' },
     })
-    const rules = r.tokens?.textMateRules ?? []
+    const rules = result.tokens?.textMateRules ?? []
     checkThat(
       'italics and recolouring share one block without clobbering',
-      rules.some((x) => x.settings.fontStyle === '') && rules.some((x) => x.settings.foreground),
+      rules.some((rule) => rule.settings.fontStyle === '') &&
+        rules.some((rule) => rule.settings.foreground),
       `${rules.length} rules`,
     )
   }
   {
-    const r = await run({
+    const result = await run({
       presets: {
         p1: { name: 'Preset 1', base: 'Chromaleon Woad', overrides: { green: '#00ff00' } },
       },
       activePresets: { 'Chromaleon Woad': 'p1' },
     })
-    const left = await r.deactivate()
+    const left = await result.deactivate()
     check('deactivate takes the overrides with it', left, undefined)
   }
 
   console.log('\ncustomizer panel')
   {
-    const r = await run({})
+    const result = await run({})
     checkThat(
       'registers the open command',
-      r.commands.includes('chromaleon.openCustomizer'),
-      r.commands.join(', '),
+      result.commands.includes('chromaleon.openCustomizer'),
+      result.commands.join(', '),
     )
     // Opening on activation would pop a panel in everyone's face on every window.
-    check('does not open the panel on activation', r.settings.__panelOpened, undefined)
+    check('does not open the panel on activation', result.settings.__panelOpened, undefined)
 
     const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
-    const declared = manifest.contributes.commands.map((c) => c.command)
+    const declared = manifest.contributes.commands.map((entry) => entry.command)
     checkThat(
       'every registered command is declared in the manifest',
-      r.commands.every((c) => declared.includes(c)),
-      r.commands.filter((c) => !declared.includes(c)).join(', '),
+      result.commands.every((command) => declared.includes(command)),
+      result.commands.filter((command) => !declared.includes(command)).join(', '),
     )
     checkThat(
       'every declared command is actually registered',
-      declared.every((c) => r.commands.includes(c)),
-      declared.filter((c) => !r.commands.includes(c)).join(', '),
+      declared.every((command) => result.commands.includes(command)),
+      declared.filter((command) => !result.commands.includes(command)).join(', '),
     )
   }
   {
@@ -626,21 +653,21 @@ async function run(
     check('every Palette role is catalogued', roles.length, 32)
     checkThat(
       'no role is listed twice',
-      new Set(roles.map((r) => r.id)).size === roles.length,
+      new Set(roles.map((role) => role.id)).size === roles.length,
       'duplicate role id',
     )
 
     // Two independent introspections of the same mapping. If they disagree, one of them is
     // reading a stale build.
-    const accent = roles.find((r) => r.id === 'accent')
+    const accent = roles.find((role) => role.id === 'accent')
     check('accent count agrees with the accent override list', accent.keys.length, 49)
 
     // Alpha has to survive into the catalogue. Writing a role override without it turns every
     // translucent border and hover state solid, and nothing about the value would look wrong.
-    const translucent = roles.flatMap((r) => r.keys).filter((k) => k.alpha)
+    const translucent = roles.flatMap((role) => role.keys).filter((entry) => entry.alpha)
     check('translucent keys keep their alpha', translucent.length, 119)
 
-    const allKeys = roles.flatMap((r) => r.keys.map((k) => k.key))
+    const allKeys = roles.flatMap((role) => role.keys.map((entry) => entry.key))
     check('every workbench key is attributed to a role', allKeys.length, 279)
     checkThat(
       'no workbench key is attributed twice',
@@ -652,24 +679,24 @@ async function run(
     // third copy of the same five numbers that drifts from the other two.
     const floorSource = fs.readFileSync(path.join(SOURCE_ROOT, 'src', 'core', 'roles.ts'), 'utf8')
     const allowed = [...floorSource.matchAll(/^\s+(?:\/\*\*.*\*\/\s+)?\w+: ([\d.]+),$/gm)].map(
-      (m) => Number(m[1]),
+      (match) => Number(match[1]),
     )
     check('the floor table has five entries', allowed.length, 5)
 
     // A role with a floor must be measurable against something, or the status line is
     // counting roles it cannot actually judge.
-    const floored = roles.filter((r) => r.floor.on !== 'none')
+    const floored = roles.filter((role) => role.floor.on !== 'none')
     checkThat(
       'every floor comes from that table',
-      floored.every((r) => allowed.includes(r.floor.min)),
+      floored.every((role) => allowed.includes(role.floor.min)),
       floored
-        .filter((r) => !allowed.includes(r.floor.min))
-        .map((r) => `${r.id}=${r.floor.min}`)
+        .filter((role) => !allowed.includes(role.floor.min))
+        .map((role) => `${role.id}=${role.floor.min}`)
         .join(', '),
     )
     checkThat(
       'the hue ramp is all measured',
-      floored.filter((r) => r.group === 'Hue ramp').length,
+      floored.filter((role) => role.group === 'Hue ramp').length,
       9,
     )
 
@@ -680,19 +707,19 @@ async function run(
       ['Chromaleon Chalk', true],
       ['Chromaleon Obsidian', false],
     ]) {
-      const p = runtime.palettes[theme]
+      const palette = runtime.palettes[theme]
       checkThat(
         `${theme} hairlines lift away from the background`,
-        (p.hairline === '#000000') === wantsDark,
-        `hairline ${p.hairline} on bg ${p.bg}`,
+        (palette.hairline === '#000000') === wantsDark,
+        `hairline ${palette.hairline} on bg ${palette.bg}`,
       )
     }
     checkThat(
       'no role paints nothing',
-      roles.every((r) => r.keys.length + r.scopes.length > 0),
+      roles.every((role) => role.keys.length + role.scopes.length > 0),
       roles
-        .filter((r) => r.keys.length + r.scopes.length === 0)
-        .map((r) => r.id)
+        .filter((role) => role.keys.length + role.scopes.length === 0)
+        .map((role) => role.id)
         .join(', '),
     )
 
@@ -717,7 +744,7 @@ async function run(
       ['input.border', 'cv-attach'],
     ]
     for (const [key, className] of CANVAS_REGIONS) {
-      const owner = roles.find((r) => r.keys.some((k) => k.key === key))?.id
+      const owner = roles.find((role) => role.keys.some((entry) => entry.key === key))?.id
       const tagged = canvas.match(new RegExp(`paint\\('([a-zA-Z]+)', '${className}'\\)`))?.[1]
       checkThat(
         `canvas .${className} is tagged with the role that paints ${key}`,
@@ -726,7 +753,7 @@ async function run(
       )
     }
 
-    const ids = roles.map((r) => r.id)
+    const ids = roles.map((role) => role.id)
     const palettes = Object.entries(runtime.palettes)
     check('a palette is emitted for every theme', palettes.length, 22)
     checkThat(
@@ -795,7 +822,11 @@ async function run(
         extensionUri: { fsPath: ROOT },
         extension: { packageJSON: { version: '0.0.0' } },
         subscriptions: [],
-        globalState: { get: (k, d) => d, update: async () => {}, setKeysForSync: () => {} },
+        globalState: {
+          get: (key, fallback) => fallback,
+          update: async () => {},
+          setKeysForSync: () => {},
+        },
       })
       // Applying the active theme on activation writes settings, and should. Drop those so
       // `written` holds only what opening and driving the panel did.
@@ -806,12 +837,13 @@ async function run(
         // The panel asks for state as soon as its script runs; nothing is sent before that.
         if (receive) await receive({ type: 'ready' })
       })
-      for (let i = 0; i < 8; i++) await new Promise((r) => setTimeout(r, 0))
+      for (let flush = 0; flush < 8; flush++) await new Promise((resolve) => setTimeout(resolve, 0))
       // onDidReceiveMessage cannot be awaited by VS Code, so the handlers are fire and
       // forget. Settling the queue here is what lets a test see writes that a real user
       // would see land a few milliseconds later.
       const settle = async () => {
-        for (let i = 0; i < 8; i++) await new Promise((r) => setTimeout(r, 0))
+        for (let flush = 0; flush < 8; flush++)
+          await new Promise((resolve) => setTimeout(resolve, 0))
       }
       const send = async (message) => {
         await withStub(() => receive(message))
@@ -847,7 +879,7 @@ async function run(
 
     console.log('\ncustomizer state, and what it must never write')
     const opened = await open('active', 'Chromaleon Tyrian')
-    const state = opened.posted.find((m) => m.type === 'state')?.state
+    const state = opened.posted.find((message) => message.type === 'state')?.state
     checkThat('the panel is sent state when it reports ready', !!state, 'nothing posted')
 
     check('every shipped theme is offered', state.themes.length, 22)
@@ -856,8 +888,8 @@ async function run(
     check('the active theme is named', state.active, 'Chromaleon Tyrian')
     checkThat(
       'high contrast variants are flagged rather than parsed in the panel',
-      state.themes.filter((t) => t.highContrast).length === 11,
-      `${state.themes.filter((t) => t.highContrast).length} flagged`,
+      state.themes.filter((theme) => theme.highContrast).length === 11,
+      `${state.themes.filter((theme) => theme.highContrast).length} flagged`,
     )
 
     // The whole point of switching themes inside the customizer is that it previews without
@@ -870,7 +902,7 @@ async function run(
     )
     checkThat(
       'the panel never sets workbench.colorTheme',
-      !opened.written.some((w) => w.includes('colorTheme')),
+      !opened.written.some((written) => written.includes('colorTheme')),
       opened.written.join(', '),
     )
 
@@ -897,7 +929,7 @@ async function run(
     // Saving must not switch the editor over on its own: that is what Apply is for.
     // The panel cannot know the id of a preset the host just forked, so it has to be told or
     // it keeps showing the shipped theme it was editing a moment ago.
-    const told = opened.posted.filter((m) => m.type === 'saved').at(-1)
+    const told = opened.posted.filter((message) => message.type === 'saved').at(-1)
     checkThat(
       'the panel is told which preset the save landed in',
       told?.preset === 'p1',
@@ -999,7 +1031,7 @@ async function run(
   {
     const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
     const declared = manifest.contributes.configuration.properties
-    const names = Object.keys(declared).map((k) => k.replace('chromaleon.', ''))
+    const names = Object.keys(declared).map((name) => name.replace('chromaleon.', ''))
     const READ = [
       'accent',
       'customAccent',
@@ -1035,26 +1067,26 @@ async function run(
     const dupes = names.length !== new Set(names).size
     checkThat(
       'no duplicate orders',
-      !dupes && new Set(Object.values(declared).map((d) => d.order)).size === names.length,
+      !dupes && new Set(Object.values(declared).map((entry) => entry.order)).size === names.length,
       'duplicate order values',
     )
   }
 
   console.log('\ncombinations and cleanup')
   {
-    const r = await run({ accent: 'Pink', borders: 'strong', shadows: false })
+    const result = await run({ accent: 'Pink', borders: 'strong', shadows: false })
     checkThat(
       'combined settings merge',
-      Object.keys(r.colors).length > 57,
-      `${Object.keys(r.colors).length} keys`,
+      Object.keys(result.colors).length > 57,
+      `${Object.keys(result.colors).length} keys`,
     )
-    const left = await r.deactivate()
+    const left = await result.deactivate()
     check('deactivate clears our block', left, undefined)
   }
   {
     // A hand-written customisation must survive our add/remove cycle.
-    const r = await run({ accent: 'Purple' })
-    r.settings['workbench.colorCustomizations']['[Chromaleon Woad]']['editor.background'] =
+    const result = await run({ accent: 'Purple' })
+    result.settings['workbench.colorCustomizations']['[Chromaleon Woad]']['editor.background'] =
       '#123456'
     const r2 = await run({ accent: 'Lime' })
     checkThat(
@@ -1067,7 +1099,7 @@ async function run(
   console.log('\nregressions (these three shipped as bugs once)')
   {
     // A workspace-level customization must not be absorbed into user settings.
-    const r = await run(
+    const result = await run(
       { accent: 'Purple' },
       {
         workspace: {
@@ -1078,7 +1110,7 @@ async function run(
       },
     )
     const globalBlock =
-      (r.settings['workbench.colorCustomizations'] ?? {})['[Chromaleon Woad]'] ?? {}
+      (result.settings['workbench.colorCustomizations'] ?? {})['[Chromaleon Woad]'] ?? {}
     checkThat(
       'does not copy workspace customizations into global',
       globalBlock['editor.background'] === undefined,
@@ -1088,8 +1120,12 @@ async function run(
   {
     // A hand-authored key in our own scope block must survive our add/remove cycle.
     const own = { '[Chromaleon Woad]': { 'editor.background': '#abcdef' } }
-    const r = await run({ accent: 'Purple' }, { global: { 'workbench.colorCustomizations': own } })
-    const after = (r.settings['workbench.colorCustomizations'] ?? {})['[Chromaleon Woad]'] ?? {}
+    const result = await run(
+      { accent: 'Purple' },
+      { global: { 'workbench.colorCustomizations': own } },
+    )
+    const after =
+      (result.settings['workbench.colorCustomizations'] ?? {})['[Chromaleon Woad]'] ?? {}
     checkThat(
       'preserves hand-written keys in our scope block',
       after['editor.background'] === '#abcdef',
@@ -1103,12 +1139,15 @@ async function run(
         textMateRules: [{ scope: 'keyword.control', settings: { foreground: '#ff0000' } }],
       },
     }
-    const r = await run({ italics: true }, { global: { 'editor.tokenColorCustomizations': own } })
-    const rules = (r.settings['editor.tokenColorCustomizations'] ?? {})['[Chromaleon Woad]']
+    const result = await run(
+      { italics: true },
+      { global: { 'editor.tokenColorCustomizations': own } },
+    )
+    const rules = (result.settings['editor.tokenColorCustomizations'] ?? {})['[Chromaleon Woad]']
       ?.textMateRules
     checkThat(
       "preserves the user's own textMateRules",
-      Array.isArray(rules) && rules.some((x) => x.settings?.foreground === '#ff0000'),
+      Array.isArray(rules) && rules.some((rule) => rule.settings?.foreground === '#ff0000'),
       JSON.stringify(rules),
     )
   }
@@ -1118,7 +1157,7 @@ async function run(
     let synced = null
     const stub = baseStub()
     stub.workspace.getConfiguration = () => ({
-      get: (k, d) => d,
+      get: (key, fallback) => fallback,
       inspect: () => ({}),
       update: async () => {},
     })
@@ -1128,7 +1167,7 @@ async function run(
       extensionUri: { fsPath: ROOT },
       subscriptions: [],
       globalState: {
-        get: (k, d) => d,
+        get: (key, fallback) => fallback,
         update: async () => {},
         setKeysForSync: (keys) => void (synced = keys),
       },

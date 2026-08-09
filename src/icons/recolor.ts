@@ -11,13 +11,17 @@ const FILL = /fill="#[0-9a-fA-F]{3,8}"/
 
 function mixHex(bottom: string, top: string, amount: number): string {
   const parse = (hex: string): [number, number, number] => {
-    const n = parseInt(hex.slice(1), 16)
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+    const packed = parseInt(hex.slice(1), 16)
+    return [(packed >> 16) & 255, (packed >> 8) & 255, packed & 255]
   }
-  const b = parse(bottom)
-  const t = parse(top)
-  const out = [0, 1, 2].map((i) => Math.round(b[i] + (t[i] - b[i]) * amount))
-  return `#${out.map((v) => v.toString(16).padStart(2, '0')).join('')}`
+  const bottomRgb = parse(bottom)
+  const topRgb = parse(top)
+  const out = [0, 1, 2].map((channelIndex) =>
+    Math.round(
+      bottomRgb[channelIndex] + (topRgb[channelIndex] - bottomRgb[channelIndex]) * amount,
+    ),
+  )
+  return `#${out.map((channel) => channel.toString(16).padStart(2, "0")).join("")}`
 }
 
 // Returns the input unchanged when there is no fill to rewrite, so an unexpected icon

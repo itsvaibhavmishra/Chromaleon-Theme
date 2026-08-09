@@ -19,22 +19,22 @@ export interface RoleView extends RoleMeta {
   edited: boolean
 }
 
-export function same(a: Record<string, string>, b: Record<string, string>): boolean {
-  const keys = Object.keys(a)
-  return keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k])
+export function same(left: Record<string, string>, right: Record<string, string>): boolean {
+  const keys = Object.keys(left)
+  return keys.length === Object.keys(right).length && keys.every((key) => left[key] === right[key])
 }
 
 export function matches(role: RoleMeta, query: string): boolean {
-  const q = query.toLowerCase()
-  return role.label.toLowerCase().includes(q) || role.id.toLowerCase().includes(q)
+  const needle = query.toLowerCase()
+  return role.label.toLowerCase().includes(needle) || role.id.toLowerCase().includes(needle)
 }
 
 // A concept is a way in, not a row. Typing "comment" names the role that paints comments
 // rather than implying a Comment role the theme does not have.
 export function conceptFor(concepts: Concept[], query: string): Concept | undefined {
-  const q = query.trim().toLowerCase()
-  if (q.length < 2) return undefined
-  return concepts.find((concept) => concept.term.startsWith(q))
+  const term = query.trim().toLowerCase()
+  if (term.length < 2) return undefined
+  return concepts.find((concept) => concept.term.startsWith(term))
 }
 
 // What a preset or a shipped theme actually renders at. `palettes` is keyed by shipped label

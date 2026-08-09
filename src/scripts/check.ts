@@ -49,7 +49,7 @@ async function checkIconTheme(dir: string, file: string): Promise<number> {
 
   if (problems.length > 0) {
     console.log(`FAIL ${file}`)
-    for (const p of problems.slice(0, 10)) console.log(`       ${p}`)
+    for (const problem of problems.slice(0, 10)) console.log(`       ${problem}`)
     if (problems.length > 10) console.log(`       ... and ${problems.length - 10} more`)
     return 1
   }
@@ -72,7 +72,7 @@ async function checkHighContrastPairs(dir: string, files: string[]): Promise<num
   ]
   let failures = 0
 
-  for (const file of files.filter((f) => f.includes('-High-Contrast'))) {
+  for (const file of files.filter((name) => name.includes('-High-Contrast'))) {
     const base = file.replace('-High-Contrast', '')
     if (!files.includes(base)) continue
 
@@ -85,7 +85,7 @@ async function checkHighContrastPairs(dir: string, files: string[]): Promise<num
     if (problems.length > 0) {
       failures++
       console.log(`FAIL ${file} brightens in-editor texture`)
-      for (const p of problems) console.log(`       ${p}`)
+      for (const problem of problems) console.log(`       ${problem}`)
     }
   }
 
@@ -114,9 +114,9 @@ async function main() {
   }
 
   const dir = join(ROOT, 'themes')
-  const all = (await readdir(dir)).filter((f) => f.endsWith('.json')).sort()
-  const iconThemes = all.filter((f) => f.includes('-Icons'))
-  const files = all.filter((f) => !f.includes('-Icons'))
+  const all = (await readdir(dir)).filter((name) => name.endsWith('.json')).sort()
+  const iconThemes = all.filter((name) => name.includes('-Icons'))
+  const files = all.filter((name) => !name.includes('-Icons'))
   if (files.length === 0) throw new Error('no themes found: run the build first')
 
   // Imported, not restated. The customizer judges an edited theme by the same table, so a
@@ -206,7 +206,7 @@ async function main() {
       const fg = rule.settings.foreground
       const name = rule.name?.toLowerCase() ?? ''
       if (!fg) continue
-      if (RECEDES.some((r) => name.includes(r))) {
+      if (RECEDES.some((recedingWord) => name.includes(recedingWord))) {
         const ratio = contrast(bg, opaque(fg))
         if (ratio < RECEDE_MIN) {
           problems.push(
@@ -225,7 +225,7 @@ async function main() {
     if (unique.length > 0) {
       failures++
       console.log(`FAIL ${file}`)
-      for (const p of unique) console.log(`       ${p}`)
+      for (const problem of unique) console.log(`       ${problem}`)
     } else {
       console.log(`ok   ${file}  body ${body.toFixed(2)}:1`)
     }

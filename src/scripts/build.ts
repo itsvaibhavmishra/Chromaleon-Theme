@@ -85,13 +85,13 @@ interface RoleEntry {
 function roleCatalogue(palette: Palette, italics: boolean): RoleEntry[] {
   // Scattered rather than sequential, so a value mixed from two sentinels can never collide
   // with a third and be attributed to the wrong role.
-  const sentinel = (i: number) =>
-    '#' + ((((i + 1) * 2654435761) >>> 0) % 0xffffff).toString(16).padStart(6, '0')
+  const sentinel = (roleIndex: number) =>
+    '#' + ((((roleIndex + 1) * 2654435761) >>> 0) % 0xffffff).toString(16).padStart(6, '0')
 
   // Every Palette role is a string, so a record over the same keys satisfies the type.
   const probe = {} as Record<keyof Palette, string>
-  ROLES.forEach((role, i) => (probe[role.id] = sentinel(i)))
-  const owner = new Map(ROLES.map((role, i) => [sentinel(i), role.id as string]))
+  ROLES.forEach((role, roleIndex) => (probe[role.id] = sentinel(roleIndex)))
+  const owner = new Map(ROLES.map((role, roleIndex) => [sentinel(roleIndex), role.id as string]))
 
   const entries = new Map<string, RoleEntry>(
     ROLES.map((role) => [role.id, { ...role, keys: [], scopes: [] }]),

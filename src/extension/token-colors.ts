@@ -88,7 +88,10 @@ export async function applyTokenColors(settings: Settings): Promise<void> {
     const ours: Rule[] = [
       ...(settings.italics
         ? []
-        : RUNTIME.italicScopes.map((s) => ({ scope: s, settings: { fontStyle: '' } }))),
+        : RUNTIME.italicScopes.map((italicScope) => ({
+            scope: italicScope,
+            settings: { fontStyle: '' },
+          }))),
       ...roleRules(settings, variant.label),
     ]
     if (ours.length > 0) {

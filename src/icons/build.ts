@@ -124,5 +124,5 @@ export async function buildIcons(
 /** Reads back what the build wrote, for the manifest check. */
 export async function countFolderSources(root: string): Promise<number> {
   const dir = join(root, 'icons', 'folders', 'source')
-  return (await readdir(dir)).filter((f) => f.endsWith('.svg')).length
+  return (await readdir(dir)).filter((name) => name.endsWith('.svg')).length
 }

@@ -107,8 +107,8 @@ function dimRamp(
   { sat = 0, light = 0 }: { sat?: number; light?: number },
 ): typeof SYNTAX {
   const pull = (color: string) => {
-    const [h, s, l] = toHsl(color)
-    return hsl(h, s * (1 - sat), l * (1 - light))
+    const [hue, saturation, lightness] = toHsl(color)
+    return hsl(hue, saturation * (1 - sat), lightness * (1 - light))
   }
   return Object.fromEntries(
     Object.entries(ramp).map(([key, value]) => [key, pull(value)]),

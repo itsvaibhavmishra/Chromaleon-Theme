@@ -3,27 +3,32 @@
 const HEX = /^#([0-9a-f]{6})$/i
 
 function parse(color: string): [number, number, number] {
-  const m = HEX.exec(color)
-  if (!m) throw new Error(`expected #rrggbb, got ${color}`)
-  const n = parseInt(m[1], 16)
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+  const match = HEX.exec(color)
+  if (!match) throw new Error(`expected #rrggbb, got ${color}`)
+  const packed = parseInt(match[1], 16)
+  return [(packed >> 16) & 255, (packed >> 8) & 255, packed & 255]
 }
 
 function format(rgb: [number, number, number]): string {
-  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)))
-  return `#${rgb.map((v) => clamp(v).toString(16).padStart(2, '0')).join('')}`
+  const clamp = (channel: number) => Math.max(0, Math.min(255, Math.round(channel)))
+  return `#${rgb.map((channel) => clamp(channel).toString(16).padStart(2, '0')).join('')}`
 }
 
 /** Attaches an 8-bit alpha suffix to a `#rrggbb` colour. */
-export function a(color: string, alpha: string): string {
+export function withAlpha(color: string, alpha: string): string {
   return `${color}${alpha}`
 }
 
 /** Blends `top` over `bottom` at `amount` (0 = bottom, 1 = top). */
 export function mix(bottom: string, top: string, amount: number): string {
-  const b = parse(bottom)
-  const t = parse(top)
-  return format([0, 1, 2].map((i) => b[i] + (t[i] - b[i]) * amount) as [number, number, number])
+  const bottomRgb = parse(bottom)
+  const topRgb = parse(top)
+  return format(
+    [0, 1, 2].map(
+      (channelIndex) =>
+        bottomRgb[channelIndex] + (topRgb[channelIndex] - bottomRgb[channelIndex]) * amount,
+    ) as [number, number, number],
+  )
 }
 
 /** Moves a colour toward black. */
@@ -38,29 +43,36 @@ export function lighten(color: string, amount: number): string {
 
 // Palettes are authored in HSL: hue family, saturation and lightness are the qualities
 // that make a theme feel like itself, and all three are invisible in hex.
-export function hsl(h: number, s: number, l: number): string {
-  const S = s / 100
-  const L = l / 100
-  const k = (n: number) => (n + h / 30) % 12
-  const amp = S * Math.min(L, 1 - L)
-  const f = (n: number) => L - amp * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))
-  return format([f(0) * 255, f(8) * 255, f(4) * 255] as [number, number, number])
+export function hsl(hue: number, saturation: number, lightness: number): string {
+  const saturationFraction = saturation / 100
+  const lightnessFraction = lightness / 100
+  const hueSector = (sectorOffset: number) => (sectorOffset + hue / 30) % 12
+  const amplitude = saturationFraction * Math.min(lightnessFraction, 1 - lightnessFraction)
+  const channelValue = (sectorOffset: number) =>
+    lightnessFraction -
+    amplitude *
+      Math.max(-1, Math.min(hueSector(sectorOffset) - 3, Math.min(9 - hueSector(sectorOffset), 1)))
+  return format([channelValue(0) * 255, channelValue(8) * 255, channelValue(4) * 255] as [
+    number,
+    number,
+    number,
+  ])
 }
 
 /** Inverse of `hsl`: returns `[hue, saturation, lightness]` in 0-360 / 0-100. */
 export function toHsl(color: string): [number, number, number] {
-  const [r, g, b] = parse(color).map((v) => v / 255)
-  const max = Math.max(r, g, b)
-  const min = Math.min(r, g, b)
-  const l = (max + min) / 2
-  const d = max - min
-  if (d === 0) return [0, 0, l * 100]
-  const s = d / (1 - Math.abs(2 * l - 1))
-  let h: number
-  if (max === r) h = ((g - b) / d) % 6
-  else if (max === g) h = (b - r) / d + 2
-  else h = (r - g) / d + 4
-  return [(((h * 60) % 360) + 360) % 360, s * 100, l * 100]
+  const [red, green, blue] = parse(color).map((channel) => channel / 255)
+  const max = Math.max(red, green, blue)
+  const min = Math.min(red, green, blue)
+  const lightness = (max + min) / 2
+  const chroma = max - min
+  if (chroma === 0) return [0, 0, lightness * 100]
+  const saturation = chroma / (1 - Math.abs(2 * lightness - 1))
+  let hue: number
+  if (max === red) hue = ((green - blue) / chroma) % 6
+  else if (max === green) hue = (blue - red) / chroma + 2
+  else hue = (red - green) / chroma + 4
+  return [(((hue * 60) % 360) + 360) % 360, saturation * 100, lightness * 100]
 }
 
 // Composites `color` over `backdrop`, honouring an `#rrggbbaa` suffix. Measuring the raw hex
@@ -68,12 +80,12 @@ export function toHsl(color: string): [number, number, number] {
 export function over(color: string, backdrop: string): string {
   const alpha = color.length === 9 ? parseInt(color.slice(7, 9), 16) / 255 : 1
   if (alpha === 1) return opaque(color)
-  const [fr, fg, fb] = parse(opaque(color))
-  const [br, bg, bb] = parse(opaque(backdrop))
+  const [frontRed, frontGreen, frontBlue] = parse(opaque(color))
+  const [backRed, backGreen, backBlue] = parse(opaque(backdrop))
   return format([
-    fr * alpha + br * (1 - alpha),
-    fg * alpha + bg * (1 - alpha),
-    fb * alpha + bb * (1 - alpha),
+    frontRed * alpha + backRed * (1 - alpha),
+    frontGreen * alpha + backGreen * (1 - alpha),
+    frontBlue * alpha + backBlue * (1 - alpha),
   ])
 }
 
@@ -85,17 +97,21 @@ export function opaque(color: string): string {
 
 /** Relative luminance, per WCAG 2.x. */
 export function luminance(color: string): number {
-  const [r, g, b] = parse(color).map((v) => {
-    const c = v / 255
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  const [red, green, blue] = parse(color).map((channel) => {
+    const channelFraction = channel / 255
+    return channelFraction <= 0.03928
+      ? channelFraction / 12.92
+      : ((channelFraction + 0.055) / 1.055) ** 2.4
   })
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue
 }
 
 /** Contrast ratio between two colours. */
-export function contrast(x: string, y: string): number {
-  const [hi, lo] = [luminance(x), luminance(y)].sort((p, q) => q - p)
-  return (hi + 0.05) / (lo + 0.05)
+export function contrast(first: string, second: string): number {
+  const [lighter, darker] = [luminance(first), luminance(second)].sort(
+    (leftLuminance, rightLuminance) => rightLuminance - leftLuminance,
+  )
+  return (lighter + 0.05) / (darker + 0.05)
 }
 
 // Black or white, whichever the colour carries better. Assuming black is wrong for
@@ -107,8 +123,8 @@ export function bestOn(color: string): string {
 // Walks bg -> fg and returns the first step clearing `ratio`. Pins UI text to a contrast
 // floor instead of a fixed lightness, so a palette tuned for mood stays legible.
 export function atLeast(bg: string, fg: string, ratio: number, from = 0): string {
-  for (let t = Math.max(0, from); t <= 1; t += 0.01) {
-    const candidate = mix(bg, fg, t)
+  for (let blend = Math.max(0, from); blend <= 1; blend += 0.01) {
+    const candidate = mix(bg, fg, blend)
     if (contrast(bg, candidate) >= ratio) return candidate
   }
   return fg
