@@ -335,10 +335,15 @@ module.exports = async function customizer() {
     const changelog = fs.readFileSync(path.join(SOURCE_ROOT, 'CHANGELOG.md'), 'utf8')
     const top = /^## \[(\d+\.\d+\.\d+)\]/m.exec(changelog)
     check('the changelog names a released version', !!top, true)
-    check('and it is the one the manifest ships', top && top[1], MANIFEST.version)
+
+    // A beta build stamps the manifest 0.1.0-beta.7, and the changelog documents releases
+    // rather than every build cut from staging. The release it descends from is what has to
+    // match, which is the version with any prerelease suffix taken off.
+    const released = MANIFEST.version.split('-')[0]
+    check('and it is the release the manifest descends from', top && top[1], released)
     checkThat(
       'the version has a link to its tag',
-      changelog.includes(`[${MANIFEST.version}]: `),
+      changelog.includes(`[${released}]: `),
       'the reference link is missing, so the heading does not resolve',
     )
 
