@@ -2,6 +2,8 @@ import { randomBytes } from 'node:crypto'
 
 import * as vscode from 'vscode'
 
+import { NS } from '@/config/extension'
+
 import { resolveAccent } from '@/core/accents'
 import { CONCEPTS } from '@/core/roles'
 import { RUNTIME } from '@/generated'
@@ -10,7 +12,6 @@ import {
   activeVariant,
   applyTheme,
   deletePreset,
-  NS,
   readSettings,
   renamePreset,
   savePreset,

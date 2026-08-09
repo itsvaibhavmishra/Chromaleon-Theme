@@ -7,7 +7,8 @@ import { applyIcons, syncIconTheme } from '@/extension/icons'
 import { applyTokenColors, clearTokenColors } from '@/extension/token-colors'
 import { registerForSync } from '@/extension/ledger'
 import { openCustomizer, registerSerializer } from '@/extension/panel'
-import { NS, readSettings } from '@/extension/settings'
+import { NS } from '@/config/extension'
+import { readSettings } from '@/extension/settings'
 
 // Read from the manifest rather than restated. A hand-kept list leaves a newly added setting
 // quietly unresettable, which is what happened to customizerLocation.

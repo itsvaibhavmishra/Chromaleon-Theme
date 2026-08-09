@@ -7,7 +7,7 @@
 // No DOM. Rendering, scroll position and CSS are not covered here and would need a browser;
 // what is covered is every decision made before a single element is created.
 
-import { conceptFor, derive, matches, paletteFor, same } from '@/webview/model'
+import { conceptFor, derive, isFailing, matches, paletteFor, same } from '@/webview/model'
 import type { PanelState } from '@/webview/protocol'
 
 let passed = 0
@@ -284,6 +284,20 @@ console.log('\nsearch')
   check('and matches a prefix', conceptFor(state.concepts, 'comm')?.role, 'fg')
   // One letter would match almost anything and the match line would flicker on every keypress.
   check('one letter is not enough', conceptFor(state.concepts, 'c'), undefined)
+}
+
+console.log('\nwhich roles read as failing')
+{
+  const roles = derive(panel(), null, { fg: '#141416' }, null).roles
+  const failing = roles.find((role) => role.id === 'fg')!
+  const passing = roles.find((role) => role.id === 'green')!
+  const noFloor = roles.find((role) => role.id === 'bg')!
+
+  checkThat('below its floor is failing', isFailing(failing), `${failing.ratio}`)
+  checkThat('above it is not', !isFailing(passing), `${passing.ratio}`)
+  // A background has no ratio and no floor, so neither half of the test can be evaluated.
+  // Reading undefined as "below" would paint every surface red.
+  checkThat('and a role with no floor never is', !isFailing(noFloor))
 }
 
 console.log('\ncomparing override sets')

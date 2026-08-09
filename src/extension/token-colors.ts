@@ -1,4 +1,5 @@
 import { activeOverrides } from '@/extension/colors'
+import { OWNED_MARK } from '@/config/extension'
 import { RUNTIME } from '@/generated'
 import {
   activeVariant,
@@ -24,12 +25,11 @@ const ITALIC_SCOPES = new Set<string>(RUNTIME.italicScopes)
 
 // Colour rules carry a name, so they can be recognised exactly rather than by shape. The
 // italic ones predate this and are still matched by shape, which is why both tests exist.
-const MARK = `${RUNTIME.brand}:`
 
 // Only the rules we write: a named colour rule of ours, or a build italic scope with
 // fontStyle cleared. Anything else in the block is the user's and stays.
 function isOurs(rule: Rule): boolean {
-  if (typeof rule.name === 'string' && rule.name.startsWith(MARK)) return true
+  if (typeof rule.name === 'string' && rule.name.startsWith(OWNED_MARK)) return true
   return (
     typeof rule.scope === 'string' &&
     ITALIC_SCOPES.has(rule.scope) &&
@@ -68,7 +68,7 @@ function roleRules(settings: Settings, label: string): Rule[] {
       // and a rule targeting one would never match.
       if (key.endsWith('(semantic)')) continue
       rules.push({
-        name: `${MARK} ${id}`,
+        name: `${OWNED_MARK} ${id}`,
         scope: key,
         settings: { foreground: `${value}${alpha}` },
       })

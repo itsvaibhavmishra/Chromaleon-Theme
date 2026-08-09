@@ -19,6 +19,11 @@ export interface RoleView extends RoleMeta {
   edited: boolean
 }
 
+/** Below the floor it is held to. A role with no floor can never be failing. */
+export function isFailing(role: RoleView): boolean {
+  return role.ratio !== undefined && role.floor.min !== undefined && role.ratio < role.floor.min
+}
+
 export function same(left: Record<string, string>, right: Record<string, string>): boolean {
   const keys = Object.keys(left)
   return keys.length === Object.keys(right).length && keys.every((key) => left[key] === right[key])

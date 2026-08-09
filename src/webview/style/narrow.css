@@ -1,0 +1,37 @@
+/* 7. Narrow: the lower split stacks, everything else stays put */
+
+@media (max-width: 600px) {
+  .canvas-region {
+    flex-direction: column;
+  }
+
+  .reveal {
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .reveal h2,
+  .reveal .muted {
+    display: none;
+  }
+
+  .reveal .collapse {
+    margin-top: 0;
+    margin-left: auto;
+  }
+
+  .lower {
+    flex-direction: column;
+  }
+
+  .list-pane {
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    border-right: none;
+    border-bottom: var(--line);
+    flex: 1;
+  }
+}

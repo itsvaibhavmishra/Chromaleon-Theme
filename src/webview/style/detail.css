@@ -1,0 +1,250 @@
+/* 5. The selected role */
+
+.detail {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.detail header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  position: sticky;
+  top: -16px;
+  z-index: 1;
+  margin: -16px -18px 0;
+  padding: 16px 18px 8px;
+  background: var(--vscode-editor-background);
+}
+
+.detail header strong {
+  font-size: 1.05em;
+}
+
+.detail header button {
+  flex: none;
+}
+
+.detail header button:first-of-type {
+  margin-left: auto;
+}
+
+.detail-sub {
+  margin-top: 2px;
+  font-size: 0.9em;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* The square is the hue at full strength, washed white across and black down. Two gradients
+   over one colour is the whole picker: no canvas, no image, nothing to load. */
+.picker-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sv {
+  position: relative;
+  height: 150px;
+  border-radius: var(--radius);
+  cursor: crosshair;
+  touch-action: none;
+  background:
+    linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent),
+    var(--hue);
+}
+
+.sv-dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.hue {
+  width: 100%;
+  height: 12px;
+  appearance: none;
+  border-radius: 6px;
+  background: linear-gradient(
+    to right,
+    #f00 0%,
+    #ff0 17%,
+    #0f0 33%,
+    #0ff 50%,
+    #00f 67%,
+    #f0f 83%,
+    #f00 100%
+  );
+}
+
+.hue::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  background: transparent;
+  cursor: grab;
+}
+
+.detail-value {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 1.25em;
+  letter-spacing: 0.04em;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  color: var(--vscode-input-foreground);
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, transparent);
+}
+
+.detail-value:focus {
+  outline: 1px solid var(--sel);
+}
+
+/* A half-typed hex is not a colour. Saying so beats silently refusing to commit. */
+.detail-value.invalid {
+  border-color: var(--vscode-inputValidation-errorBorder, var(--vscode-editorError-foreground));
+}
+
+.badge-edited {
+  margin-left: 8px;
+  font-size: 0.72em;
+  letter-spacing: 0.08em;
+  padding: 1px 6px;
+  border-radius: 9px;
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background);
+}
+
+.detail-note,
+.detail-contrast {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.detail-note {
+  color: var(--vscode-descriptionForeground);
+}
+
+.detail-contrast {
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  background: var(--vscode-textBlockQuote-background, var(--vscode-editorWidget-background));
+}
+
+.detail-contrast.warn {
+  color: var(--vscode-inputValidation-warningForeground, var(--vscode-editorWarning-foreground));
+  background: var(--vscode-inputValidation-warningBackground, transparent);
+  border: 1px solid var(--vscode-editorWarning-foreground);
+}
+
+.detail h3 {
+  margin: 4px 0 0;
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+}
+
+.paints {
+  flex: none;
+  border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.25));
+  border-radius: var(--radius);
+}
+
+.paints div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px;
+  font-size: 0.92em;
+}
+
+.paints div:nth-child(odd) {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.paints-kind {
+  margin-left: auto;
+  font-size: 0.85em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.paints .muted {
+  padding: 10px;
+  margin: 0;
+}
+
+.detail footer {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.detail .link {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--vscode-textLink-foreground);
+}
+
+/* 5. Empty states */
+
+.empty {
+  margin: auto;
+  max-width: 44ch;
+  padding: 30px;
+  text-align: center;
+}
+
+.empty-box {
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 16px;
+  border-radius: var(--radius);
+  border: 1px dashed var(--vscode-descriptionForeground);
+  opacity: 0.6;
+}
+
+.empty h3 {
+  margin: 0 0 8px;
+  font-size: 1.05em;
+}
+
+.empty p {
+  margin: 0;
+  line-height: 1.55;
+  color: var(--vscode-descriptionForeground);
+}
+
+.no-theme {
+  margin: 60px auto;
+  max-width: 42ch;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.no-theme p {
+  color: var(--vscode-descriptionForeground);
+  line-height: 1.55;
+  margin-bottom: 18px;
+}
+
+.no-theme button {
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}

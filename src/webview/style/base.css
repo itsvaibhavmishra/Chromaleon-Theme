@@ -1,0 +1,85 @@
+/* Every colour of the panel itself comes from VS Code. It injects all ~900 registered
+   workbench colours as --vscode-* custom properties, already resolved with the user's
+   customizations applied, and re-pushes them on every theme change. Hardcoding a hex here
+   would break that.
+
+   The canvas is the one exception, and deliberately so: it is painted from the theme being
+   edited, which is not always the theme the panel is running under. */
+
+:root {
+  --gap: 12px;
+  --radius: 6px;
+  --line: 1px solid var(--vscode-panel-border, var(--vscode-widget-border, transparent));
+  /* Not focusBorder: our own themes zero it, and the panel usually runs under one of ours. */
+  --sel: var(--vscode-textLink-foreground, var(--vscode-focusBorder));
+  /* Fixed, not themed: an error colour lands anywhere from rose to orange depending on who paints it. */
+  --danger: #d13438;
+  --danger-hover: #b22a2e;
+  --danger-text: #c0272d;
+}
+
+/* No one red clears 4.5:1 on both paper and slate, so the tone follows the class VS Code sets. */
+body.vscode-dark,
+body.vscode-high-contrast {
+  --danger-text: #f2565b;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.muted {
+  color: var(--vscode-descriptionForeground);
+}
+
+code {
+  font-family: var(--vscode-editor-font-family);
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+  background: var(--vscode-button-secondaryBackground, transparent);
+}
+
+button:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground, var(--vscode-toolbar-hoverBackground));
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.swatch {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 4px;
+  border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.35));
+}

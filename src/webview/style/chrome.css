@@ -1,0 +1,309 @@
+/* 1. Context bar */
+
+.context {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: var(--line);
+}
+
+.badge {
+  font-size: 0.72em;
+  letter-spacing: 0.08em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.badge-preview {
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.badge-unsaved {
+  color: var(
+    --vscode-gitDecoration-modifiedResourceForeground,
+    var(--vscode-editorWarning-foreground)
+  );
+}
+
+.context-actions .apply,
+.context-theme .apply {
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+
+.context-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.context-theme {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-button {
+  padding: 5px 9px;
+  line-height: 1;
+}
+
+.chev {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  opacity: 0.8;
+}
+
+/* Theme picker and the overflow menu */
+
+.picker,
+.overflow {
+  position: relative;
+}
+
+.rename {
+  font-family: inherit;
+  font-size: inherit;
+  padding: 5px 10px;
+  min-width: 160px;
+  border-radius: var(--radius);
+  color: var(--vscode-input-foreground);
+  background: var(--vscode-input-background);
+  border: 1px solid var(--sel);
+}
+
+.picker-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-color: var(--vscode-widget-border, rgba(128, 128, 128, 0.3));
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  min-width: 240px;
+  border-radius: var(--radius);
+  color: var(--vscode-menu-foreground, var(--vscode-foreground));
+  background: var(--vscode-menu-background, var(--vscode-editorWidget-background));
+  border: 1px solid var(--vscode-menu-border, var(--vscode-widget-border, transparent));
+  box-shadow: 0 4px 14px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.36));
+}
+
+.menu-small {
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.menu-wide {
+  min-width: 460px;
+}
+
+.menu-col {
+  flex: 1;
+  min-width: 210px;
+}
+
+.menu-col h3 {
+  margin: 2px 0 6px 8px;
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+}
+
+.menu-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  padding: 5px 8px;
+}
+
+.menu-item:hover:not(:disabled) {
+  color: var(--vscode-menu-selectionForeground, var(--vscode-list-activeSelectionForeground));
+  background: var(--vscode-menu-selectionBackground, var(--vscode-list-activeSelectionBackground));
+}
+
+/* The line owns the highlight, not the button inside it, so the dots sit inside the same
+   background and the hover follows whichever half the pointer is over. */
+.row-line {
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+}
+
+.row-line.on {
+  background: var(--vscode-list-inactiveSelectionBackground);
+}
+
+.row-line:hover {
+  color: var(--vscode-menu-selectionForeground, var(--vscode-list-activeSelectionForeground));
+  background: var(--vscode-menu-selectionBackground, var(--vscode-list-activeSelectionBackground));
+}
+
+.row-line .menu-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-line .menu-item:hover {
+  color: inherit;
+  background: none;
+}
+
+.row-more {
+  flex: none;
+  padding: 5px 8px;
+  line-height: 1;
+  opacity: 0;
+  color: inherit;
+  background: none;
+  border: none;
+}
+
+.row-line:hover .row-more,
+.row-more[aria-expanded='true'] {
+  opacity: 1;
+}
+
+/* Not a second background inside the row's own: only the glyph answers the pointer. */
+.row-more:hover:not(:disabled),
+.row-more[aria-expanded='true'] {
+  color: var(--sel);
+  background: none;
+}
+
+/* Positioned against the picker, so the scrolling columns cannot clip it. */
+.row-menu {
+  position: absolute;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  min-width: 170px;
+  padding: 4px;
+  border-radius: var(--radius);
+  border: 1px solid var(--vscode-menu-border, var(--vscode-widget-border, transparent));
+  background: var(--vscode-menu-background, var(--vscode-editorWidget-background));
+  box-shadow: 0 4px 14px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.36));
+}
+
+.row-menu button {
+  width: 100%;
+  text-align: left;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+}
+
+.row-menu button:hover {
+  color: var(--vscode-menu-selectionForeground, var(--vscode-list-activeSelectionForeground));
+  background: var(--vscode-menu-selectionBackground, var(--vscode-list-activeSelectionBackground));
+}
+
+.row-menu .danger {
+  color: var(--danger-text);
+}
+
+.row-menu .danger:hover {
+  color: #ffffff;
+  background: var(--danger);
+}
+
+.menu-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hc {
+  font-style: normal;
+  font-size: 0.85em;
+  margin-left: 6px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.tag {
+  margin-left: auto;
+  flex: none;
+  font-size: 0.72em;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 9px;
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background);
+}
+
+.menu hr,
+.row-menu hr {
+  border: none;
+  border-top: var(--line);
+  margin: 5px 0;
+}
+
+/* Confirmation dialog */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  /* A dim rather than a colour, so it has no --vscode-* to read: VS Code dims its own the same way. */
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.dialog {
+  width: min(360px, calc(100vw - 48px));
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  color: var(--vscode-editorWidget-foreground, var(--vscode-foreground));
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-widget-border, transparent);
+  box-shadow: 0 8px 26px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.4));
+}
+
+.dialog h2 {
+  margin: 0 0 6px;
+  font-size: 1.05em;
+  font-weight: 600;
+}
+
+.dialog p {
+  margin: 0;
+  font-size: 0.92em;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.dialog-actions .danger {
+  color: #ffffff;
+  background: var(--danger);
+}
+
+.dialog-actions .danger:hover {
+  background: var(--danger-hover);
+}

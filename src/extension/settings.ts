@@ -1,9 +1,8 @@
 import * as vscode from 'vscode'
 
 import { THEME_DEFAULT } from '@/core/accents'
+import { NS } from '@/config/extension'
 import { RUNTIME } from '@/generated'
-
-export const NS = 'chromaleon'
 
 export type SelectionStyle = 'room' | 'accent'
 export type CursorStyle = 'theme' | 'accent'

@@ -1,0 +1,23 @@
+/* 3. Tabs */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 14px;
+  border-bottom: var(--line);
+  flex: none;
+}
+
+.tabs button {
+  border-radius: 0;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  padding: 9px 12px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.tabs button.on {
+  color: var(--vscode-foreground);
+  border-bottom-color: var(--vscode-focusBorder);
+}

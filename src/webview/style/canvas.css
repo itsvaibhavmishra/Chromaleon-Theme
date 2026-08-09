@@ -1,0 +1,432 @@
+/* 2. Canvas */
+
+.canvas-region {
+  display: flex;
+  gap: 14px;
+  padding: 12px 14px 8px;
+  flex: none;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Collapsed there is no resizer, and the resizer was carrying the dividing line. */
+.canvas-region.collapsed {
+  border-bottom: var(--line);
+}
+
+/* Sits in the flow rather than floating over either side, so nothing is ever covered by the
+   thing used to resize it. The hit area is larger than the visible line, which is the only
+   way a 1px divider is comfortable to grab. */
+.resizer {
+  flex: none;
+  height: 9px;
+  cursor: row-resize;
+  display: flex;
+  align-items: center;
+  touch-action: none;
+}
+
+.resizer span {
+  height: 1px;
+  width: 100%;
+  background: var(--vscode-panel-border, var(--vscode-widget-border, transparent));
+}
+
+.resizer:hover span,
+.resizer:focus-visible span {
+  height: 2px;
+  background: var(--vscode-sash-hoverBorder, var(--vscode-focusBorder));
+}
+
+.resizer:focus-visible {
+  outline: none;
+}
+
+.reveal {
+  width: 150px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.reveal h2 {
+  margin: 0 0 2px;
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+}
+
+.reveal button {
+  text-align: left;
+  border-color: var(--vscode-widget-border, rgba(128, 128, 128, 0.25));
+}
+
+.reveal .reveal-on {
+  border-color: var(--vscode-focusBorder);
+}
+
+.reveal .muted {
+  font-size: 0.8em;
+  line-height: 1.4;
+  margin: 4px 0 0;
+}
+
+.reveal .collapse {
+  margin-top: auto;
+}
+
+/* The miniature. Sizes are in em of a small root so the whole thing scales as one. */
+
+.canvas {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 26px 148px minmax(0, 1fr) 184px;
+  grid-template-rows: minmax(0, 1fr) 18px;
+  font-size: 9px;
+  line-height: 1.55;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.25));
+}
+
+/* The canvas is clickable, so every tagged region has to say so. The ring comes from the
+   canvas palette rather than the panel's, because the canvas can be showing a light theme
+   while the panel runs a dark one. The accent is the right pick: check.ts already holds it
+   to 3:1 against the background, so a visible ring is guaranteed on every variant. */
+.canvas {
+  --ring: var(--r-accent);
+  --wash: color-mix(in srgb, var(--r-accent) 18%, transparent);
+}
+
+.canvas [data-role] {
+  cursor: pointer;
+}
+
+/* Hover washes, selection borders. The wash is an inset shadow rather than a background, so
+   it lies over the region's own colour instead of replacing the thing being judged. */
+.canvas [data-role]:hover {
+  box-shadow: inset 0 0 0 100vmax var(--wash);
+}
+
+/* Every ancestor matches too, so hovering a token would light the span, the line, the editor
+   and the canvas at once. Keep one under the pointer. */
+.canvas [data-role]:hover [data-role]:not(:hover) {
+  box-shadow: none;
+}
+
+.canvas .lit {
+  outline: 2px solid var(--ring);
+  outline-offset: -1px;
+  border-radius: 2px;
+}
+
+/* A role can paint a region and something inside it: bg covers the editor and every line in
+   it. Ringing both stripes the canvas, so only the outermost of a nested pair is drawn. */
+.canvas .lit .lit {
+  outline: none;
+}
+
+.strip {
+  flex: 1;
+  display: flex;
+  height: 26px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.25));
+}
+
+.cv-activity {
+  background: var(--r-chrome);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding-top: 8px;
+}
+
+.cv-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--r-fgMuted);
+  opacity: 0.75;
+}
+
+.cv-icon-on {
+  color: var(--r-fg);
+  opacity: 1;
+}
+
+.cv-side {
+  background: var(--r-chrome);
+  color: var(--r-fgMuted);
+  overflow: hidden;
+  padding-bottom: 6px;
+}
+
+.cv-side-title {
+  padding: 6px 8px 4px;
+  font-size: 0.85em;
+  letter-spacing: 0.08em;
+  color: var(--r-fg);
+}
+
+.cv-tree {
+  padding: 1px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cv-tree-on {
+  color: var(--r-accent);
+}
+
+.cv-main {
+  background: var(--r-bg);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.cv-tabs {
+  display: flex;
+  background: var(--r-bg);
+  flex: none;
+}
+
+.cv-tab {
+  padding: 4px 10px;
+  color: var(--r-fgMuted);
+  border-top: 1.5px solid transparent;
+  white-space: nowrap;
+}
+
+.cv-tab-on {
+  background: var(--r-bg);
+  color: var(--r-fg);
+  border-top-color: var(--r-accent);
+}
+
+.cv-crumbs {
+  padding: 3px 10px;
+  color: var(--r-fgMuted);
+  background: var(--r-bg);
+  flex: none;
+}
+
+.cv-editor {
+  flex: 1;
+  overflow: hidden;
+  background: var(--r-bg);
+  padding-bottom: 4px;
+}
+
+.cv-line {
+  display: flex;
+  white-space: pre;
+  font-family: var(--vscode-editor-font-family);
+}
+
+.cv-line-on {
+  background: var(--r-surfaceAlt);
+}
+
+.cv-num {
+  width: 26px;
+  flex: none;
+  text-align: right;
+  padding-right: 10px;
+  color: var(--r-lineNumber);
+}
+
+.cv-code {
+  color: var(--r-fg);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.cv-guide {
+  display: inline-block;
+  width: 2ch;
+  border-left: 1px solid var(--r-guide);
+}
+
+.cv-terminal {
+  flex: none;
+  background: var(--r-chrome);
+  border-top: 1px solid var(--r-border);
+  font-family: var(--vscode-editor-font-family);
+  color: var(--r-fg);
+}
+
+.cv-term-tabs {
+  display: flex;
+  gap: 12px;
+  padding: 4px 10px 3px;
+  letter-spacing: 0.08em;
+  color: var(--r-fgMuted);
+}
+
+.cv-term-tabs .on {
+  color: var(--r-fgUi);
+  border-bottom: 1px solid var(--r-accent);
+}
+
+.cv-term-body {
+  padding: 2px 10px 6px;
+  white-space: pre;
+}
+
+.cv-caret {
+  display: inline-block;
+  width: 4px;
+  height: 9px;
+  vertical-align: -1px;
+  background: var(--r-cursor);
+}
+
+/* The secondary side bar. Core workbench, so the theme genuinely paints it. */
+
+/* Several keys here are a role at an alpha rather than the role itself, so they are composed
+   the same way workbench.ts composes them. Naming the role and the percentage separately
+   keeps both visible, and the value still tracks the role when it is edited. */
+.cv-chat {
+  --hairline: color-mix(in srgb, var(--r-white) 6%, transparent);
+  --icon: color-mix(in srgb, var(--r-fg) 70%, transparent);
+  --placeholder: color-mix(in srgb, var(--r-fg) 40%, transparent);
+  --toolbar-on: color-mix(in srgb, var(--r-accent) 15%, transparent);
+
+  background: var(--r-chrome);
+  border-left: 1px solid var(--r-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--r-fgMuted);
+}
+
+.cv-g {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  color: var(--icon);
+}
+
+.cv-g-on {
+  background: var(--toolbar-on);
+  border-radius: 2px;
+  padding: 1px;
+  box-sizing: content-box;
+}
+
+.cv-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px 3px;
+  letter-spacing: 0.06em;
+}
+
+.cv-chat-tab {
+  color: var(--r-fg);
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--r-accent);
+}
+
+.cv-chat-tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cv-chat-sub {
+  border-bottom: 1px solid var(--r-border);
+  padding-bottom: 5px;
+}
+
+/* Empty on purpose. A conversation would be another extension's content, and the point of
+   the region here is the surfaces around it. */
+.cv-chat-body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* chat.requestBubbleBackground and chat.requestBorder, which is a white hairline rather than
+   an accent frame. The accent appears here only as the link. */
+.cv-tip {
+  margin: 6px;
+  padding: 4px 6px;
+  border-radius: 3px;
+  background: var(--r-surface);
+  border: 1px solid var(--hairline);
+  color: var(--r-fg);
+  line-height: 1.45;
+}
+
+.cv-compose {
+  margin: 0 6px 6px;
+  border-radius: 4px;
+  background: var(--r-surface);
+  border: 1px solid var(--hairline);
+}
+
+.cv-attach {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 5px 5px 0;
+  padding: 2px 4px;
+  border-radius: 3px;
+  border: 1px dashed var(--hairline);
+  color: var(--placeholder);
+}
+
+.cv-file {
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cv-prompt {
+  padding: 6px;
+  color: var(--placeholder);
+}
+
+.cv-compose-foot {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px 5px;
+  color: var(--icon);
+}
+
+.cv-auto,
+.cv-enter {
+  color: var(--r-fg);
+}
+
+.cv-enter {
+  margin-left: auto;
+  display: flex;
+}
+
+.cv-status {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  background: var(--r-chrome);
+  color: var(--r-fgUi);
+}
+
+.cv-status-right {
+  margin-left: auto;
+}
