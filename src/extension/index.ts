@@ -9,24 +9,15 @@ import { registerForSync } from '@/extension/ledger'
 import { openCustomizer, registerSerializer } from '@/extension/panel'
 import { NS, readSettings } from '@/extension/settings'
 
-const RESETTABLE = [
-  'accent',
-  'customAccent',
-  'accentedStatusBar',
-  'selectionStyle',
-  'cursorStyle',
-  'italics',
-  'currentLine',
-  'tabIndicator',
-  'tabBar',
-  'borders',
-  'shadows',
-  'accentFolders',
-  'hideExplorerArrows',
-  'syncIconTheme',
-  'presets',
-  'activePresets',
-]
+// Read from the manifest rather than restated. A hand-kept list leaves a newly added setting
+// quietly unresettable, which is what happened to customizerLocation.
+function resettableKeys(context: vscode.ExtensionContext): string[] {
+  const declared: Record<string, unknown> =
+    context.extension?.packageJSON?.contributes?.configuration?.properties ?? {}
+  return Object.keys(declared)
+    .filter((key) => key.startsWith(`${NS}.`))
+    .map((key) => key.slice(NS.length + 1))
+}
 
 // Kept so deactivate can clean up the keys it wrote; deactivate receives no context.
 let active: vscode.ExtensionContext | undefined
@@ -82,7 +73,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     vscode.commands.registerCommand(`${NS}.reset`, async () => {
       const config = vscode.workspace.getConfiguration(NS)
-      for (const key of RESETTABLE) {
+      for (const key of resettableKeys(context)) {
         await config.update(key, undefined, vscode.ConfigurationTarget.Global)
       }
       vscode.window.showInformationMessage(`${RUNTIME.brand}: settings reset to defaults.`)

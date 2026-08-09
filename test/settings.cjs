@@ -18,6 +18,7 @@ const ROOT = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(__di
 // repo. Pointing them at ROOT is what broke the packaged run: it looked like a missing file.
 const SOURCE_ROOT = path.resolve(__dirname, '..')
 const BUNDLE = path.join(ROOT, 'dist', 'extension.cjs')
+const MANIFEST = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
 const ICON_THEME = path.join(ROOT, 'themes', 'Chromaleon-Icons.json')
 // Resolved from the theme JSON rather than hardcoded: the folder set is addressed by the
 // state that produced it, so the directory name is exactly what the accent settings change.
@@ -130,6 +131,7 @@ async function run(
   // between what the user set and what the merged view reports: the distinction bug 1
   // turned on.
   const registered = []
+  const handlers = new Map()
   const settings = { 'workbench.colorTheme': theme, 'workbench.iconTheme': iconTheme, ...global }
   const ws = { ...workspace }
   const store = new Map()
@@ -139,7 +141,12 @@ async function run(
     section === 'chromaleon'
       ? {
           get: (k, d) => (k in chromaleon ? chromaleon[k] : d),
-          update: async (k, v) => void (chromaleon[k] = v),
+          // undefined removes rather than stores, as VS Code does. Storing it would make a
+          // reset look like it wrote seventeen undefined values.
+          update: async (k, v) => {
+            if (v === undefined) delete chromaleon[k]
+            else chromaleon[k] = v
+          },
         }
       : {
           get: (k, d) => (k in ws ? ws[k] : k in settings ? settings[k] : d),
@@ -156,8 +163,9 @@ async function run(
     throw new Error('the panel should not open during activation')
   }
   vscode.commands = {
-    registerCommand: (id) => {
+    registerCommand: (id, handler) => {
       registered.push(id)
+      handlers.set(id, handler)
       return { dispose() {} }
     },
     executeCommand: async () => {},
@@ -166,7 +174,9 @@ async function run(
   const { withStub } = await activateWith(vscode, {
     extensionPath: ROOT,
     extensionUri: { fsPath: ROOT },
-    extension: { packageJSON: { version: '0.0.0-test' } },
+    // The real manifest, not a stand-in: the reset command derives its key list from it, so a
+    // hand-written stub here would assert against a list nothing ships.
+    extension: { packageJSON: { version: '0.0.0-test', ...MANIFEST } },
     subscriptions: [],
     globalState: {
       get: (k, d) => (store.has(k) ? store.get(k) : d),
@@ -191,6 +201,10 @@ async function run(
     iconThemeJson: JSON.parse(fs.readFileSync(ICON_THEME, 'utf8')),
     folderSvg: fs.readFileSync(folderIcon(), 'utf8'),
     folderSetDir: path.basename(path.dirname(folderIcon())),
+    chromaleon,
+    // Command handlers reach for vscode the same way deactivate() does, so they need the stub
+    // reinstalled around the call.
+    runCommand: (id) => withStub(() => handlers.get(id)()),
     deactivate: async () => {
       await withStub((ext) => ext.deactivate())
       return settings['workbench.colorCustomizations']
@@ -1006,6 +1020,13 @@ async function run(
       'activePresets',
     ]
     check('manifest declares exactly what the runtime reads', names.sort(), [...READ].sort())
+
+    // Reset used to walk a hand-kept list, and customizerLocation was never on it: the command
+    // reported success and left the setting exactly where it was.
+    const everySetting = Object.fromEntries(names.map((name) => [name, 'set']))
+    const reset = await run(everySetting)
+    await reset.runCommand('chromaleon.reset')
+    check('reset clears every declared setting', Object.keys(reset.chromaleon), [])
     checkThat(
       'accent and customAccent lead the list',
       declared['chromaleon.accent'].order === 1 && declared['chromaleon.customAccent'].order === 2,
