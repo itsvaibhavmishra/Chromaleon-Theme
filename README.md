@@ -51,31 +51,60 @@ reads as a gradient. Every variant ships a **High Contrast** version alongside i
 - **1,250 file and folder icons** with 13,017 associations, from Material Icon Theme.
 - **Nothing written until you change something** - an untouched install adds zero lines to your
   `settings.json`, and what it does write is scoped to the active theme.
-- **Fourteen settings** covering the status bar, selections, cursor, current line, tabs,
+- **A customizer panel** that edits any of the 29 colour roles against a live miniature of the
+  window, saves what you make as presets, and imports and exports them as files.
+- **Fifteen settings** covering the status bar, selections, cursor, current line, tabs,
   borders, shadows, italics and folder tinting.
+
+## 🎛️ Customizer
+
+Run **Chromaleon: Open Customizer** to open the panel. It has three tabs.
+
+**Colours** lists all 29 editable roles and what each one paints, with a miniature of the
+window above. Click a region in the miniature to jump to the role that paints it, or pick a
+role and watch every region it touches light up. Each role shows what it reads at against its
+contrast floor, and offers a one-click fix that moves lightness only, so the hue survives.
+
+Edits are a draft. Nothing reaches VS Code until you press Save, and undo and redo (⌘Z, ⌘⇧Z)
+walk the whole session. A shipped theme is never written to: editing one copies it into a
+preset of your own first, so the 22 stay exactly as the build made them.
+
+**Settings** is the same settings VS Code exposes, laid out with the miniature reflecting them
+as you go. These write straight away, so there is nothing to save.
+
+**Presets** is everything you have made, with what it is built on and when you saved it. Hold
+the eye on any card to see it in the miniature without applying it. Import and Export move
+presets between machines as `.json` files, and an import you already have is flagged rather
+than duplicated.
 
 ## ⚙️ Settings
 
 All under `chromaleon.*`. Run **Chromaleon: Open Settings** to jump straight there.
 
-| Setting             | Default         | Effect                                                |
-| :------------------ | :-------------- | :---------------------------------------------------- |
-| `accent`            | `Theme Default` | Accent across the UI and folder icons                 |
-| `customAccent`      | _empty_         | Any `#rrggbb`, overrides `accent`                     |
-| `accentedStatusBar` | `false`         | Paint the status bar in the accent                    |
-| `selectionStyle`    | `room`          | Tint selections with the variant's hue, or the accent |
-| `cursorStyle`       | `theme`         | Cursor in the theme's own colour, or the accent       |
-| `italics`           | `true`          | Italicise comments, keywords and modules              |
-| `currentLine`       | `outline`       | `outline`, `solid` or `none`                          |
-| `tabIndicator`      | `bottom`        | `bottom`, `top` or `none`                             |
-| `tabBar`            | `flat`          | `flat`, or `contrasted` for a darker bar              |
-| `borders`           | `none`          | `none`, `subtle` or `strong`                          |
-| `shadows`           | `true`          | Shadows under widgets and overlays                    |
-| `accentFolders`     | `false`         | Tint folder icons with the accent                     |
-| `explorerArrows`    | `false`         | Show chevrons beside folders                          |
-| `syncIconTheme`     | `true`          | Switch to Chromaleon Icons automatically              |
+| Setting              | Default         | Effect                                                |
+| :------------------- | :-------------- | :---------------------------------------------------- |
+| `accent`             | `Theme Default` | Accent across the UI and folder icons                 |
+| `customAccent`       | _empty_         | Any `#rrggbb`, overrides `accent`                     |
+| `accentedStatusBar`  | `false`         | Paint the status bar in the accent                    |
+| `selectionStyle`     | `room`          | Tint selections with the variant's hue, or the accent |
+| `cursorStyle`        | `theme`         | Cursor in the theme's own colour, or the accent       |
+| `italics`            | `true`          | Italicise comments, keywords and modules              |
+| `currentLine`        | `outline`       | `outline`, `solid` or `none`                          |
+| `tabIndicator`       | `bottom`        | `bottom`, `top` or `none`                             |
+| `tabBar`             | `flat`          | `flat`, or `contrasted` for a darker bar              |
+| `borders`            | `none`          | `none`, `subtle` or `strong`                          |
+| `shadows`            | `true`          | Shadows under widgets and overlays                    |
+| `accentFolders`      | `false`         | Tint folder icons with the accent                     |
+| `hideExplorerArrows` | `false`         | Hide the chevrons beside folders                      |
+| `syncIconTheme`      | `true`          | Switch to Chromaleon Icons automatically              |
+| `customizerLocation` | `newWindow`     | Where Open Customizer puts the panel                  |
 
-Commands: **Select Accent**, **Clear Custom Accent**, **Open Settings**, **Reset All Settings**.
+Your presets are stored under `chromaleon.presets` and `chromaleon.activePresets`. They are
+plain JSON, so they can be read and edited by hand; the panel drops anything that is not a
+`#rrggbb` rather than failing.
+
+Commands: **Open Customizer**, **Select Accent**, **Clear Custom Accent**, **Open Settings**,
+**Reset All Settings**.
 
 Two things worth knowing about how settings apply:
 
