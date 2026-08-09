@@ -19,6 +19,7 @@
   - Improvements:
 
   - Fixed:
+    - A beta build no longer fails its own verification for having a version the changelog has never heard of.
     - The manifest no longer marks itself private, which would have refused to publish.
 
   - Developers:
