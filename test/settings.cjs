@@ -14,6 +14,9 @@ const path = require('node:path')
 const fs = require('node:fs')
 
 const ROOT = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(__dirname, '..')
+// An installed copy ships no source, so assertions that read src/ have to resolve against this
+// repo. Pointing them at ROOT is what broke the packaged run: it looked like a missing file.
+const SOURCE_ROOT = path.resolve(__dirname, '..')
 const BUNDLE = path.join(ROOT, 'dist', 'extension.cjs')
 const ICON_THEME = path.join(ROOT, 'themes', 'Chromaleon-Icons.json')
 // Resolved from the theme JSON rather than hardcoded: the folder set is addressed by the
@@ -602,7 +605,7 @@ async function run(
     // generated.ts is written by build.ts as a JSON literal, so the object can be read back
     // without running the bundle. The customizer's numbers come from here, and the whole
     // point of generating them is that nobody can hand-write one that flatters the design.
-    const source = fs.readFileSync(path.join(ROOT, 'src', 'generated.ts'), 'utf8')
+    const source = fs.readFileSync(path.join(SOURCE_ROOT, 'src', 'generated.ts'), 'utf8')
     const runtime = JSON.parse(source.slice(source.indexOf('{'), source.lastIndexOf('}') + 1))
     const roles = runtime.roles
 
@@ -633,7 +636,7 @@ async function run(
 
     // The floors are read from core/roles.ts rather than restated, so this cannot become a
     // third copy of the same five numbers that drifts from the other two.
-    const floorSource = fs.readFileSync(path.join(ROOT, 'src', 'core', 'roles.ts'), 'utf8')
+    const floorSource = fs.readFileSync(path.join(SOURCE_ROOT, 'src', 'core', 'roles.ts'), 'utf8')
     const allowed = [...floorSource.matchAll(/^\s+(?:\/\*\*.*\*\/\s+)?\w+: ([\d.]+),$/gm)].map(
       (m) => Number(m[1]),
     )
@@ -682,7 +685,7 @@ async function run(
     // The canvas is a map now: click a region and it hands back the role tagged on it. A
     // region tagged with a role that does not actually paint that key sends people to edit
     // the wrong colour, and nothing about the rendering would look wrong.
-    const canvas = fs.readFileSync(path.join(ROOT, 'src', 'webview', 'canvas.tsx'), 'utf8')
+    const canvas = fs.readFileSync(path.join(SOURCE_ROOT, 'src', 'webview', 'canvas.tsx'), 'utf8')
     const CANVAS_REGIONS = [
       ['sideBar.background', 'cv-side'],
       ['sideBarTitle.foreground', 'cv-side-title'],
