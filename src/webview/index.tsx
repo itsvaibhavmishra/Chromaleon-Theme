@@ -3,17 +3,19 @@ import { render } from 'preact'
 import '@/webview/style.css'
 import { useEffect, useRef, useState } from 'preact/hooks'
 
-import { contrast, hsl, toHsl } from '@/core/color'
+import { hsl, toHsl } from '@/core/color'
 import { Canvas } from '@/webview/canvas'
-import type {
-  Concept,
-  PanelState,
-  RoleGroup,
-  PresetView,
-  RoleMeta,
-  ToHost,
-  ToWebview,
-} from '@/webview/protocol'
+import {
+  conceptFor,
+  derive,
+  HEX,
+  HIGH_CONTRAST,
+  matches,
+  paletteFor,
+  type RoleView,
+  shortName,
+} from '@/webview/model'
+import type { Concept, PanelState, RoleGroup, ToHost, ToWebview } from '@/webview/protocol'
 
 /** Survives a reload. Everything here is the panel's own, never the user's settings. */
 interface Persisted {
@@ -55,65 +57,6 @@ const KEEPS_SELECTION = '.canvas, .list-pane, .detail, .resizer, .menu, button, 
 const GROUPS: RoleGroup[] = ['Surfaces', 'Foregrounds', 'Accent', 'Hue ramp', 'Fixed']
 const TABS = ['Colours', 'Settings', 'Presets'] as const
 type Tab = (typeof TABS)[number]
-
-interface RoleView extends RoleMeta {
-  value: string
-  ratio?: number
-  /** Everything it paints, keys and scopes together. */
-  count: number
-  /** True when this is the user's colour rather than the one the theme ships. */
-  edited: boolean
-}
-
-// Resolved in the panel rather than the host, so switching which theme is being edited costs
-// nothing: every palette is already here.
-function resolve(
-  roles: RoleMeta[],
-  palette: Record<string, string>,
-  accent: string,
-  edits: Record<string, string>,
-): RoleView[] {
-  return roles.map((role) => {
-    const edited = edits[role.id]
-    const value = edited ?? (role.id === 'accent' ? accent : palette[role.id])
-    const count = role.keys.length + role.scopes.length
-    const view = { ...role, value, count, edited: edited !== undefined }
-    if (role.floor.on === 'none') return view
-    const against = role.floor.on === 'accent' ? accent : palette.bg
-    return { ...view, ratio: contrast(value, against) }
-  })
-}
-
-const HEX = /^#[0-9a-fA-F]{6}$/
-
-const same = (a: Record<string, string>, b: Record<string, string>) => {
-  const keys = Object.keys(a)
-  return keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k])
-}
-
-// What a preset or a shipped theme actually renders at. `palettes` is keyed by shipped label
-// only, so looking a preset id up in it directly returns nothing and every swatch goes black.
-function paletteFor(state: PanelState, id: string): Record<string, string> {
-  const preset = state.presets[id]
-  const shipped = state.palettes[preset ? preset.base : id] ?? {}
-  return preset ? { ...shipped, ...preset.overrides } : shipped
-}
-
-const HIGH_CONTRAST = ' High Contrast'
-const shortName = (label: string) => label.replace(/^Chromaleon /, '')
-
-function matches(role: RoleMeta, query: string): boolean {
-  const q = query.toLowerCase()
-  return role.label.toLowerCase().includes(q) || role.id.toLowerCase().includes(q)
-}
-
-// A concept is a way in, not a row. Typing "comment" names the role that paints comments
-// rather than implying a Comment role the theme does not have.
-function conceptFor(concepts: Concept[], query: string): Concept | undefined {
-  const q = query.trim().toLowerCase()
-  if (q.length < 2) return undefined
-  return concepts.find((concept) => concept.term.startsWith(q))
-}
 
 function Swatch({ value }: { value: string }) {
   return <span class="swatch" style={{ background: value }} />
@@ -674,23 +617,10 @@ function App() {
 
   // A preset id or a shipped theme label. Follows VS Code until you pick something here, and
   // never the other way round: switching in the panel must not restyle the editor.
-  const fallback = state.active ?? state.themes[0].label
-  const suggested = state.active ? (state.activePresets[state.active] ?? state.active) : fallback
-  const viewing =
-    editing && (state.presets[editing] || state.palettes[editing]) ? editing : suggested
-
-  const viewingPreset = state.presets[viewing] as PresetView | undefined
-  const base = viewingPreset ? viewingPreset.base : viewing
-  const palette = state.palettes[base] ?? state.palettes[fallback]
-  const accent = state.accentOverride ?? palette.accent
-  const saved = viewingPreset ? viewingPreset.overrides : {}
-  // Compare is a view state and must not reach this, or holding it would make Save write an
-  // empty set and disable the compare button out from under the hold.
-  const edits = draft ?? saved
-  const roles = resolve(state.roles, palette, accent, edits)
-
-  const unsaved = draft !== null && !same(draft, saved)
-  const changed = Object.keys(edits).length
+  const view = derive(state, editing, draft, comparing)
+  const { viewing, base, label, edits, roles, unsaved, changed, previewing, measured, failing } =
+    view
+  const viewingPreset = view.preset
 
   const setRole = (role: string, value: string | null) => {
     const next = { ...edits }
@@ -703,14 +633,7 @@ function App() {
   const save = () =>
     post({ type: 'save', base, preset: viewingPreset ? viewing : null, overrides: edits })
 
-  const label = viewingPreset ? viewingPreset.name : shortName(base)
   const activeRole = roles.find((role) => role.id === selected) ?? null
-  const measured = roles.filter((role) => role.floor.min !== undefined)
-  const failing = measured.filter((role) => role.ratio! < role.floor.min!).length
-  // Previewing means the editor is not showing what the panel is: either a different base,
-  // or a preset that is not the one switched on for it.
-  const previewing =
-    base !== state.active || state.activePresets[base] !== (viewingPreset ? viewing : undefined)
 
   return (
     <div class="app">
@@ -797,7 +720,7 @@ function App() {
         {/* The one place compare applies: it shows the theme as it ships, dropping the draft
             and anything already saved rather than only the unsaved half. */}
         <Canvas
-          palette={{ ...palette, accent, ...(comparing ? {} : edits) }}
+          palette={view.canvas}
           collapsed={collapsed}
           showTerminal={showTerminal}
           selected={selected}
@@ -875,8 +798,8 @@ function App() {
         <span class={failing > 0 ? 'dot warn' : 'dot ok'} />
         <span>
           {failing > 0
-            ? `${failing} of ${measured.length} roles below their target`
-            : `${measured.length} of ${measured.length} roles meet their target`}
+            ? `${failing} of ${measured} roles below their target`
+            : `${measured} of ${measured} roles meet their target`}
         </span>
         {previewing &&
           (state.active ? (

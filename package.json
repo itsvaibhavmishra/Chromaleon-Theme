@@ -68,7 +68,7 @@
     "check": "npm run build && tsx src/scripts/check.ts && tsc --noEmit && npm run lint && npm run format:check && npm test && npm run check:package",
     "package": "npm run build && vsce package --no-dependencies",
     "watch": "tsx watch src/scripts/build.ts",
-    "test": "node test/settings.cjs",
+    "test": "node test/settings.cjs && tsx test/panel.ts",
     "lock": "tsx src/scripts/lock.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
