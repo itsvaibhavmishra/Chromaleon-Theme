@@ -28,6 +28,16 @@ permissions:
 
 jobs:
   release:
+    # Merging into staging publishes a beta by default, because a testing branch nobody can
+    # install is not much of a testing branch. `[skip release]` in the merge commit opts out,
+    # for the changes that are not worth a build: a typo, a comment, a rename.
+    #
+    # main is absent from the triggers above on purpose, so merging a release PR publishes
+    # nothing. Tagging does, and that stays a separate deliberate act.
+    if: >-
+      github.event_name != 'push'
+      || startsWith(github.ref, 'refs/tags/')
+      || !contains(github.event.head_commit.message, '[skip release]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -14,6 +14,13 @@
 
 - [ ] `devlog.txt` updated, or this is a staging into main release PR
 
+### Release
+
+<!-- Merging into staging publishes a beta build. Tick this only if that is not worth doing,
+     and put `[skip release]` in the merge commit. Merging into main never publishes. -->
+
+- [ ] Not worth a beta build, merge commit will say `[skip release]`
+
 ### Checklist
 
 - [ ] `npm run check` passes, and I gated on its exit code rather than reading its output
