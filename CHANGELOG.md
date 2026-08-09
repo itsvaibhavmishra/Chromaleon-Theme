@@ -33,5 +33,6 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Workspace-level `workbench.colorCustomizations` are no longer copied into user settings.
 - Hand-authored `"[Chromaleon …]"` scope blocks are no longer deleted; only keys this extension wrote are removed.
 - The owned-key ledger is registered for Settings Sync, so keys stay removable on every machine.
+- The README no longer ends on a profile view counter. The marketplace refuses an extension whose readme loads images from a domain outside its allowlist, so the badge made this unpublishable.
 
 [0.1.0]: https://github.com/itsvaibhavmishra/Chromaleon-Theme/releases/tag/v0.1.0
