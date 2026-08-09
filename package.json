@@ -49,6 +49,9 @@
     "chromaleon"
   ],
   "main": "./dist/extension.cjs",
+  "imports": {
+    "#test/*": "./test/*"
+  },
   "activationEvents": [
     "onStartupFinished"
   ],
