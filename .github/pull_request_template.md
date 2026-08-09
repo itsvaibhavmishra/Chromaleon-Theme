@@ -1,22 +1,22 @@
 ### Description
 
-<!-- Please describe what you have changed or added -->
+<!-- What changed, and why. The why is the part that is hard to recover later. -->
 
 ### Screenshots or Video
 
-<!-- if applicable -->
+<!-- Anything that changes what the panel or a theme looks like. -->
 
-### Types of changes
+### Devlog
 
-<!-- What types of changes does your code introduce?  -->
-<!-- Bug fix (non-breaking change which fixes an issue) -->
-<!-- New feature (non-breaking change which adds functionality) -->
-<!-- Breaking change -->
+<!-- Required for a PR into staging. Add your line to devlog.txt under the heading that
+     matches who the change is for, and tick the box below.
+     Not required for staging into main: that PR moves the whole devlog into CHANGELOG.md. -->
 
-### Checklist:
+- [ ] `devlog.txt` updated, or this is a staging into main release PR
 
-- [ ] My screenshot/video is up-to-date with the latest changes
-- [ ] Make sure there are no linting errors
-- [ ] Make sure you pull the latest changes of the branch you want to merge this branch into
-- [ ] I've included any necessary tests <!-- if applicable -->
-- [ ] I've added proper labels to this pull request <!-- if applicable -->
+### Checklist
+
+- [ ] `npm run check` passes, and I gated on its exit code rather than reading its output
+- [ ] `npm run check:history <base>..HEAD` passes, so every commit stands on its own
+- [ ] `src/theme-lock.json` is untouched, or the commit body says why a theme changed on purpose
+- [ ] Screenshots are up to date with the latest push

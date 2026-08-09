@@ -1,7 +1,7 @@
 {
   "name": "chromaleon-theme",
   "displayName": "Chromaleon Theme",
-  "description": "20+ themes with matching file icons, dark and light with a high contrast variant of each, and an accent you can shift to any colour.",
+  "description": "The last colour theme you need. 22 themes to start from, then edit any colour against a live preview and make one that is truly yours. Matching file icons included.",
   "version": "0.1.0",
   "// publisher": "TODO: replace with a real marketplace publisher id before publishing",
   "publisher": "itsvaibhavmishra",
@@ -46,7 +46,13 @@
     "material icons",
     "syntax highlighting",
     "vscode theme",
-    "chromaleon"
+    "chromaleon",
+    "customizer",
+    "theme editor",
+    "color picker",
+    "presets",
+    "custom theme",
+    "theme builder"
   ],
   "main": "./dist/extension.cjs",
   "imports": {
@@ -331,25 +337,13 @@
     "walkthroughs": [
       {
         "id": "chromaleon.getStarted",
-        "title": "Get started with Chromaleon",
-        "description": "Pick a background that suits the room, then shift the accent and tune anything else.",
+        "title": "Make Chromaleon yours",
+        "description": "Start from one of 22 themes, then change anything you like and keep it as your own.",
         "steps": [
           {
-            "id": "chromaleon.step.customizer",
-            "title": "Open the customizer",
-            "description": "Edit any of the 29 colour roles and watch a miniature of the whole window follow.\n[Open Customizer](command:chromaleon.openCustomizer)",
-            "media": {
-              "image": "icon.png",
-              "altText": "The Chromaleon customizer"
-            },
-            "completionEvents": [
-              "onCommand:chromaleon.openCustomizer"
-            ]
-          },
-          {
             "id": "chromaleon.step.variant",
-            "title": "Choose a variant",
-            "description": "Eleven variants, dark and light, each with a high contrast pair.\n[Choose a theme](command:workbench.action.selectTheme)",
+            "title": "Pick a starting point",
+            "description": "Eleven variants, dark and light, each with a high contrast pair. Choose whichever background suits the room; everything after this is yours to change.\n[Choose a theme](command:workbench.action.selectTheme)",
             "media": {
               "image": "icon.png",
               "altText": "Chromaleon variants"
@@ -361,13 +355,37 @@
           {
             "id": "chromaleon.step.accent",
             "title": "Shift the accent",
-            "description": "One colour drives every active and selected surface, folder icons included.\n[Select an accent](command:chromaleon.selectAccent)",
+            "description": "One colour drives every active and selected surface, folder icons included. Pick a named accent or type any hex you like.\n[Select an accent](command:chromaleon.selectAccent)",
             "media": {
               "image": "icon.png",
               "altText": "Chromaleon accents"
             },
             "completionEvents": [
               "onSettingChanged:chromaleon.accent"
+            ]
+          },
+          {
+            "id": "chromaleon.step.customizer",
+            "title": "Open the customizer",
+            "description": "Every colour in the editor is one of 29 roles, and the customizer lets you change any of them against a live miniature of your window.\n\nThe miniature is a map as well as a preview: click any region in it and the panel jumps to the role that paints it, so you never have to know a VS Code colour key.\n[Open Customizer](command:chromaleon.openCustomizer)",
+            "media": {
+              "image": "icon.png",
+              "altText": "The Chromaleon customizer"
+            },
+            "completionEvents": [
+              "onCommand:chromaleon.openCustomizer"
+            ]
+          },
+          {
+            "id": "chromaleon.step.save",
+            "title": "Keep it as a preset",
+            "description": "Nothing reaches VS Code until you press Save, and a shipped theme is never written to: editing one copies it into a preset of your own first.\n\nPresets live on the third tab, where you can search them, apply them, and export them to a file to carry to another machine.",
+            "media": {
+              "image": "icon.png",
+              "altText": "Chromaleon presets"
+            },
+            "completionEvents": [
+              "onSettingChanged:chromaleon.presets"
             ]
           }
         ]

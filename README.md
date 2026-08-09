@@ -9,13 +9,20 @@
 
 <br/>
 
-Chromaleon is 20+ themes for VS Code, dark and light, with a high contrast variant of each
-and a matching file icon theme. Pick a background that suits the room, then
-**shift the accent to any colour you like** and watch the whole interface follow, icons
-included.
+**The last colour theme you need.**
+
+Chromaleon ships 22 themes, dark and light, with a high contrast variant of each and a
+matching file icon theme. That is where you start, not where you stop.
+
+Every colour in the editor is one of 29 roles, and Chromaleon hands you all of them. Nudge a
+shipped theme until it feels like yours, or build something nobody has seen, against a live
+miniature of your own window. Keep as many as you like, switch between them, carry them to
+another machine.
+
+One extension, and as many themes as you care to make.
 
 ![Version](https://img.shields.io/badge/version-0.1.0-2578B3)
-![Themes](https://img.shields.io/badge/themes-20%2B-8B5CF6)
+![Themes](https://img.shields.io/badge/themes-unlimited-8B5CF6)
 ![Icons](https://img.shields.io/badge/icons-1250-4FA6FF)
 ![VS Code](https://img.shields.io/badge/VS%20Code-%3E%3D1.102-007ACC?logo=visualstudiocode&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-34D399)
@@ -40,6 +47,13 @@ reads as a gradient. Every variant ships a **High Contrast** version alongside i
 
 ## ✨ Features
 
+- **Make it yours, not just pick one** - 29 editable colour roles, a live miniature of your
+  window to edit against, and as many saved presets as you want. A shipped theme is never
+  written to: changing a colour copies it into a preset of your own first.
+- **The preview is a map** - click any region in the miniature and it names the role that
+  paints it, so you never need to know a VS Code colour key to change what you are looking at.
+- **Take them with you** - export presets to a file and import them anywhere, one or many at
+  a time.
 - **One accent, everywhere** - pick from 14 accents or type any hex, and all 57 accent-carrying
   colours repaint together, including folder icons.
 - **Readable by construction** - the build refuses to ship a theme whose body text drops below
