@@ -216,13 +216,3 @@ registers both in the manifest, and verifies every contrast floor.
 ## 📄 License
 
 [MIT](LICENSE.txt)
-
-<br/>
-
-<div align="center">
-<img src="https://komarev.com/ghpvc/?username=itsvaibhavmishra&&style=for-the-badge" align="center" />
-</div>
-
-<br/>
-
----
