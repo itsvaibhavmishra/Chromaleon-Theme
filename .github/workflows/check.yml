@@ -66,3 +66,24 @@ jobs:
           name: chromaleon-vsix
           path: chromaleon.vsix
           retention-days: 14
+
+  # The check above runs on the tip of the branch, so a commit in the middle of a series can
+  # fail its own suite and nothing notices. That is exactly what splitting a change risks:
+  # tests landing one commit later than the behaviour they cover.
+  history:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check every commit in the pull request
+        run: npm run check:history origin/${{ github.base_ref }}..HEAD

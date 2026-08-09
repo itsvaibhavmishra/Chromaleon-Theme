@@ -73,7 +73,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
-    "check:package": "tsx src/scripts/package-contents.ts"
+    "check:package": "tsx src/scripts/package-contents.ts",
+    "check:history": "tsx src/scripts/check-history.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
