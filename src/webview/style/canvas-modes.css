@@ -68,3 +68,27 @@
 .cv-shadows .cv-chat {
   box-shadow: 0 -3px 8px rgb(0 0 0 / 28%);
 }
+
+/* selectionStyle: room tints with the variant's own background hue, accent with the accent.
+   Both are the same composition the extension writes, just at miniature scale. */
+.cv-selection-room .cv-sel {
+  background: color-mix(in srgb, var(--r-surfaceAlt) 85%, var(--r-bg));
+}
+
+.cv-selection-accent .cv-sel {
+  background: color-mix(in srgb, var(--r-accent) 28%, var(--r-bg));
+}
+
+/* The caret sits on the current line, so the cursor role has somewhere to be seen. */
+.cv-cursor {
+  display: inline-block;
+  width: 1.5px;
+  height: 0.95em;
+  vertical-align: -0.15em;
+  margin-right: -1.5px;
+  background: var(--r-cursor);
+}
+
+.cv-cursor-accent .cv-cursor {
+  background: var(--r-accent);
+}

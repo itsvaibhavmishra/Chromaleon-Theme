@@ -9,6 +9,8 @@ export interface Span {
   role: string
   /** Set on the scopes the build italicises, so the italics setting only reaches those. */
   italic?: boolean
+  // Selection has to land on something for selectionStyle to have anywhere to show.
+  selected?: boolean
 }
 
 export interface Line {
@@ -71,11 +73,11 @@ export const SAMPLE: Line[] = [
       prop('bg'),
       punct(':'),
       plain('     '),
-      fn('hsl'),
-      punct('('),
-      num('218'),
-      punct(','),
-      num(' 12'),
+      { ...fn('hsl'), selected: true },
+      { ...punct('('), selected: true },
+      { ...num('218'), selected: true },
+      { ...punct(','), selected: true },
+      { ...num(' 12'), selected: true },
       punct(','),
       num(' 7'),
       punct('),'),

@@ -145,6 +145,8 @@ function App() {
     tabIndicator: String(values.tabIndicator ?? 'bottom'),
     tabBar: String(values.tabBar ?? 'flat'),
     borders: String(values.borders ?? 'none'),
+    selectionStyle: String(values.selectionStyle ?? 'room'),
+    cursorStyle: String(values.cursorStyle ?? 'theme'),
     accentedStatusBar: values.accentedStatusBar === true,
     shadows: values.shadows !== false,
     accentFolders: values.accentFolders === true,

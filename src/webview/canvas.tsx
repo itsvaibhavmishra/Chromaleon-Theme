@@ -18,6 +18,8 @@ export interface CanvasSettings {
   tabIndicator: string
   tabBar: string
   borders: string
+  selectionStyle: string
+  cursorStyle: string
   accentedStatusBar: boolean
   shadows: boolean
   accentFolders: boolean
@@ -136,6 +138,8 @@ export function Canvas({
     `cv-indicator-${settings.tabIndicator}`,
     `cv-tabbar-${settings.tabBar}`,
     `cv-borders-${settings.borders}`,
+    `cv-selection-${settings.selectionStyle}`,
+    `cv-cursor-${settings.cursorStyle}`,
     settings.italics ? 'cv-italics' : '',
     settings.accentedStatusBar ? 'cv-accented-status' : '',
     settings.shadows ? 'cv-shadows' : '',
@@ -213,12 +217,19 @@ export function Canvas({
             >
               <span {...paint('lineNumber', 'cv-num')}>{lineIndex + 1}</span>
               <span class="cv-code">
+                {line.current && <span {...paint('cursor', 'cv-cursor')} />}
                 {Array.from({ length: line.indent }, (_, level) => (
                   <span key={level} {...paint('guide', 'cv-guide')} />
                 ))}
                 {line.spans.map((span, spanIndex) => {
                   const tag = paint(span.role)
-                  const classes = [tag.class, span.italic ? 'cv-em' : ''].filter(Boolean).join(' ')
+                  const classes = [
+                    tag.class,
+                    span.italic ? 'cv-em' : '',
+                    span.selected ? 'cv-sel' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')
                   return (
                     <span
                       key={spanIndex}

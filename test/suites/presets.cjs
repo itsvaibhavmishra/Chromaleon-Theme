@@ -106,6 +106,51 @@ module.exports = async function presets() {
   }
   {
     // The panel is served entirely from dist/, which is what localResourceRoots allows.
+    // Three separate bugs shipped with the same shape: a base rule pinned a property, so the
+    // class meant to change it could never win, and the setting silently did nothing. These
+    // pin that each mode still has something to move. No browser: the question is whether the
+    // rule can reach the property at all, which is a question about the stylesheet.
+    const css = fs.readFileSync(path.join(ROOT, 'dist', 'webview.css'), 'utf8')
+    const MODES = [
+      ['.cv-indicator-top .cv-tab-on', 'border-top-color'],
+      ['.cv-indicator-bottom .cv-tab-on', 'border-bottom-color'],
+      ['.cv-line-outline .cv-line-on', 'box-shadow'],
+      ['.cv-line-solid .cv-line-on', 'background'],
+      ['.cv-tabbar-contrasted .cv-tabs', 'background'],
+      ['.cv-borders-subtle .cv-side', 'border-color'],
+      ['.cv-accented-status .cv-status', 'background'],
+      ['.cv-italics .cv-em', 'font-style'],
+      ['.cv-selection-accent .cv-sel', 'background'],
+      ['.cv-cursor-accent .cv-cursor', 'background'],
+    ]
+    for (const [selector, property] of MODES) {
+      const block = css.slice(css.indexOf(selector))
+      checkThat(
+        `${selector} still sets ${property}`,
+        css.includes(selector) && block.slice(0, block.indexOf('}')).includes(property),
+        'the rule is gone, so the setting changes nothing',
+      )
+    }
+
+    // The base rules the modes act on must leave those properties free to be moved. The
+    // bundle is minified, so the selector runs straight into its brace.
+    const ruleFor = (selector) => {
+      const at = css.indexOf(`${selector}{`)
+      return at === -1 ? '' : css.slice(at, css.indexOf('}', at))
+    }
+    const baseTab = ruleFor('.cv-tab')
+    checkThat(
+      'the tab carries both edges for the indicator to colour',
+      baseTab.includes('border-top') && baseTab.includes('border-bottom'),
+      'an edge is missing, so one indicator setting cannot show',
+    )
+    checkThat(
+      'and the active tab pins neither, so the setting decides',
+      !ruleFor('.cv-tab-on').includes('border-top-color') &&
+        !ruleFor('.cv-tab-on').includes('border-bottom-color'),
+      'the active tab hardcodes an edge again, which is the bug that shipped',
+    )
+
     for (const asset of ['webview.js', 'webview.css', 'extension.cjs']) {
       checkThat(`dist/${asset} is built`, fs.existsSync(path.join(ROOT, 'dist', asset)), 'missing')
     }
