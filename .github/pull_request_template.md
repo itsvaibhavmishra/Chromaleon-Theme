@@ -16,10 +16,10 @@
 
 ### Release
 
-<!-- Merging into staging publishes a beta build. Tick this only if that is not worth doing,
-     and put `[skip release]` in the merge commit. Merging into main never publishes. -->
+<!-- Merging into staging publishes a beta build. If this change is not worth one, add the
+     `skip release` label. Merging into main never publishes; tagging does. -->
 
-- [ ] Not worth a beta build, merge commit will say `[skip release]`
+- [ ] Not worth a beta build, so this PR carries the `skip release` label
 
 ### Checklist
 

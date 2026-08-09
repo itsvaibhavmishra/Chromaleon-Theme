@@ -25,19 +25,55 @@ concurrency:
 
 permissions:
   contents: write
+  # Only to read back the labels on the PR a commit came from.
+  pull-requests: read
 
 jobs:
+  # Merging into staging publishes a beta by default, because a testing branch nobody can
+  # install is not much of a testing branch. Opting out is a decision made on the PR, so the
+  # `skip release` label is the way to say it and it is visible before the merge rather than
+  # while typing one. The commit marker still works, for a push that never had a PR.
+  #
+  # main is absent from the triggers on purpose, so merging a release PR publishes nothing.
+  # Tagging does, and that stays a separate deliberate act.
+  decide:
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.check.outputs.release }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MESSAGE: ${{ github.event.head_commit.message }}
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" != "push" ]] || [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "a tag or a manual run is an explicit request to publish"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "${MESSAGE}" == *"[skip release]"* ]]; then
+            echo "the commit says [skip release]"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Fails open on purpose: a direct push has no PR, and an API that is having a bad
+          # day should cost a build nobody wanted rather than lose one somebody did.
+          LABELS=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" \
+            --jq '[.[].labels[].name] | join(",")' 2>/dev/null || echo '')
+          echo "labels on the pull request for this commit: ${LABELS:-none}"
+
+          if [[ ",${LABELS}," == *",skip release,"* ]]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
   release:
-    # Merging into staging publishes a beta by default, because a testing branch nobody can
-    # install is not much of a testing branch. `[skip release]` in the merge commit opts out,
-    # for the changes that are not worth a build: a typo, a comment, a rename.
-    #
-    # main is absent from the triggers above on purpose, so merging a release PR publishes
-    # nothing. Tagging does, and that stays a separate deliberate act.
-    if: >-
-      github.event_name != 'push'
-      || startsWith(github.ref, 'refs/tags/')
-      || !contains(github.event.head_commit.message, '[skip release]')
+    needs: decide
+    if: needs.decide.outputs.release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

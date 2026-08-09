@@ -14,7 +14,7 @@
     - Tagging main publishes a GitHub release with the vsix attached and the changelog as its notes.
     - Every push to staging publishes a pre-release build, so there is always an installable copy of what is coming.
     - A release can be started by hand against any tag, which is the only way to publish one tagged before this existed.
-    - `[skip release]` in a merge commit pushes to staging without publishing a beta.
+    - The `skip release` label on a PR merges into staging without publishing a beta, and the commit marker still works for a push that had no PR.
 
   - Improvements:
 
