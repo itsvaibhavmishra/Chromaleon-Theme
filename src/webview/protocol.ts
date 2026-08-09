@@ -17,7 +17,6 @@ export type ToHost =
   | { type: 'save'; base: string; preset: string | null; overrides: Record<string, string> }
   // Explicit, and the only thing that changes the theme VS Code is running.
   | { type: 'applyTheme'; base: string; preset: string | null }
-  | { type: 'resetPreset'; preset: string }
   | { type: 'deletePreset'; preset: string }
 
 export type RoleGroup = 'Surfaces' | 'Foregrounds' | 'Accent' | 'Hue ramp' | 'Fixed'

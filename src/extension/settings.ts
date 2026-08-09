@@ -120,14 +120,6 @@ export async function applyTheme(base: string, id: string | null): Promise<void>
     .update('workbench.colorTheme', base, vscode.ConfigurationTarget.Global)
 }
 
-/** Drops every override on a preset, leaving the preset itself in place. */
-export async function resetPreset(id: string): Promise<void> {
-  const presets = { ...(globalValue('presets') ?? {}) }
-  if (!presets[id]) return
-  presets[id] = { ...presets[id], overrides: {} }
-  await write('presets', presets)
-}
-
 /** Removes a preset, and switches it off wherever it was in use. */
 export async function deletePreset(id: string): Promise<void> {
   const presets = { ...(globalValue('presets') ?? {}) }

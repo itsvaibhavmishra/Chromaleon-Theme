@@ -906,12 +906,17 @@ async function run(
 
     // Choosing a theme is a deliberate, user-initiated act, so it goes through VS Code's own
     // picker rather than us writing the setting behind their back.
-    // Reset empties a preset but keeps it, so the name and the base survive. Delete is the
-    // one that removes it, and it has to switch it off too or activePresets keeps a dangling id.
-    await opened.send({ type: 'resetPreset', preset: 'p1' })
+    // Reset all is a draft like any other edit, so it arrives as a save of an empty set. The
+    // preset itself survives: only Delete removes one.
+    await opened.send({
+      type: 'save',
+      base: 'Chromaleon Tyrian',
+      preset: 'p1',
+      overrides: {},
+    })
     const afterReset = opened.written.at(-1)
     checkThat(
-      'resetting empties the overrides and keeps the preset',
+      'saving an empty set empties the preset and keeps it',
       afterReset.includes('"overrides":{}') && afterReset.includes('"name":"Preset 1"'),
       afterReset,
     )

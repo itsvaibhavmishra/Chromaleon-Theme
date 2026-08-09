@@ -86,6 +86,11 @@ function resolve(
 
 const HEX = /^#[0-9a-fA-F]{6}$/
 
+const same = (a: Record<string, string>, b: Record<string, string>) => {
+  const keys = Object.keys(a)
+  return keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k])
+}
+
 // What a preset or a shipped theme actually renders at. `palettes` is keyed by shipped label
 // only, so looking a preset id up in it directly returns nothing and every swatch goes black.
 function paletteFor(state: PanelState, id: string): Record<string, string> {
@@ -613,8 +618,10 @@ function App() {
   const [collapsed, setCollapsed] = useState(false)
   const [showTerminal, setShowTerminal] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
-  // Edits live here until saved. Nothing the panel does reaches the editor on its own.
-  const [draft, setDraft] = useState<Record<string, string>>({})
+  // Edits live here until saved, and nothing the panel does reaches the editor on its own.
+  // Null means untouched; once set it is the complete override set, not a layer over the
+  // saved one, so a draft can remove a saved colour as well as add one.
+  const [draft, setDraft] = useState<Record<string, string> | null>(null)
   const [comparing, setComparing] = useState(false)
   const [canvasHeight, setCanvasHeight] = useState(
     vscode.getState()?.canvasHeight ?? CANVAS_DEFAULT,
@@ -677,21 +684,20 @@ function App() {
   const palette = state.palettes[base] ?? state.palettes[fallback]
   const accent = state.accentOverride ?? palette.accent
   const saved = viewingPreset ? viewingPreset.overrides : {}
-  // What is actually edited. Compare is a view state and must not reach this, or holding it
-  // would make Save write an empty set and disable the compare button out from under the hold.
-  const edits = { ...saved, ...draft }
+  // Compare is a view state and must not reach this, or holding it would make Save write an
+  // empty set and disable the compare button out from under the hold.
+  const edits = draft ?? saved
   const roles = resolve(state.roles, palette, accent, edits)
 
-  const unsaved = Object.keys(draft).some((id) => draft[id] !== saved[id])
+  const unsaved = draft !== null && !same(draft, saved)
   const changed = Object.keys(edits).length
 
-  const setRole = (role: string, value: string | null) =>
-    setDraft((current) => {
-      const next = { ...current }
-      if (value === null) delete next[role]
-      else next[role] = value
-      return next
-    })
+  const setRole = (role: string, value: string | null) => {
+    const next = { ...edits }
+    if (value === null) delete next[role]
+    else next[role] = value
+    setDraft(next)
+  }
 
   // Saving a draft against a shipped theme forks it: the host decides that, not the panel.
   const save = () =>
@@ -719,15 +725,9 @@ function App() {
           >
             Delete preset
           </button>
-          <button
-            onClick={() => {
-              // Both halves, or resetting a saved preset would leave the draft still showing
-              // the edits and read as nothing having happened.
-              setDraft({})
-              if (viewingPreset) post({ type: 'resetPreset', preset: viewing })
-            }}
-            disabled={changed === 0}
-          >
+          {/* Staged like any other edit, so it needs saving. Writing straight through would
+              be the one destructive action in the panel that skipped the draft. */}
+          <button onClick={() => setDraft({})} disabled={changed === 0}>
             Reset all
           </button>
           <button
@@ -767,7 +767,7 @@ function App() {
             viewing={viewing}
             label={label}
             onPick={(id) => {
-              setDraft({})
+              setDraft(null)
               setEditing(id)
             }}
           />
