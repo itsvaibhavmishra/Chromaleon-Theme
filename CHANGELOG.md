@@ -9,7 +9,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.0] - 2026-08-09
 
-### Added
+### New
 
 - 20+ colour themes, dark and light, each variant generating a high contrast version alongside it.
 - **Chromaleon Icons**, built on [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) (MIT) with 672 file icons, 578 folder icons, 13,017 associations.

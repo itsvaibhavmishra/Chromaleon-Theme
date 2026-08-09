@@ -1,0 +1,177 @@
+# Releases are cut by tagging main, never by a merge. A merge is somebody finishing a thought;
+# a release is a decision, and the two should not be the same gesture.
+#
+# A push to staging publishes a pre-release instead, so there is always an installable build of
+# what is coming without touching main or spending a version number on it.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+    branches: [staging]
+  # A tag pushed before this workflow existed can never trigger it, so publishing has to be
+  # startable by hand as well. Also the way to retry a release that failed halfway.
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Tag or branch to release from'
+        required: true
+        default: 'main'
+
+# Two releases racing would fight over the same tag.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  # Only to read back the labels on the PR a commit came from.
+  pull-requests: read
+
+jobs:
+  # Merging into staging publishes a beta by default, because a testing branch nobody can
+  # install is not much of a testing branch. Opting out is a decision made on the PR, so the
+  # `skip release` label is the way to say it and it is visible before the merge rather than
+  # while typing one. The commit marker still works, for a push that never had a PR.
+  #
+  # main is absent from the triggers on purpose, so merging a release PR publishes nothing.
+  # Tagging does, and that stays a separate deliberate act.
+  decide:
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.check.outputs.release }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MESSAGE: ${{ github.event.head_commit.message }}
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" != "push" ]] || [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "a tag or a manual run is an explicit request to publish"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "${MESSAGE}" == *"[skip release]"* ]]; then
+            echo "the commit says [skip release]"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Fails open on purpose: a direct push has no PR, and an API that is having a bad
+          # day should cost a build nobody wanted rather than lose one somebody did.
+          LABELS=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" \
+            --jq '[.[].labels[].name] | join(",")' 2>/dev/null || echo '')
+          echo "labels on the pull request for this commit: ${LABELS:-none}"
+
+          if [[ ",${LABELS}," == *",skip release,"* ]]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    needs: decide
+    if: needs.decide.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          # The notes come out of the changelog, which needs the history the tag sits in.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Building is required either way, since themes/, icons/ and dist/ are all gitignored.
+      # A tag runs the whole gate: nothing else has checked that exact commit. A staging push
+      # was already checked by check.yml on the same sha, so it only needs the build.
+      - run: npm run check
+        if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/')
+
+      - run: npm run build
+        if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')
+
+      - name: Work out what is being released
+        id: what
+        shell: bash
+        run: |
+          MANIFEST=$(node -p "require('./package.json').version")
+          RELEASING="${GITHUB_REF}"
+          [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]] && RELEASING="refs/tags/v${MANIFEST}"
+          if [[ "${RELEASING}" == refs/tags/* ]]; then
+            TAG="${RELEASING#refs/tags/}"
+            # The tag and the manifest disagreeing means one of them is a mistake, and
+            # publishing either would be wrong.
+            if [[ "v${MANIFEST}" != "${TAG}" ]]; then
+              echo "::error::tag ${TAG} does not match package.json ${MANIFEST}"
+              exit 1
+            fi
+            echo "version=${MANIFEST}" >> "$GITHUB_OUTPUT"
+            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            VERSION="${MANIFEST}-beta.${GITHUB_RUN_NUMBER}"
+            npm version "${VERSION}" --no-git-tag-version --allow-same-version
+            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+            echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Package
+        shell: bash
+        run: npx vsce package --no-dependencies --out chromaleon-${{ steps.what.outputs.version }}.vsix
+
+      # Packaging silently dropping a file is the failure this catches, and it has happened.
+      - name: Verify the packaged extension
+        shell: bash
+        run: |
+          mkdir -p .verify
+          unzip -q chromaleon-${{ steps.what.outputs.version }}.vsix -d .verify
+          node test/settings.cjs .verify/extension
+
+      - name: Take the notes from the changelog
+        id: notes
+        shell: bash
+        run: |
+          if [[ "${{ steps.what.outputs.prerelease }}" == "false" ]]; then
+            # Everything under this version's heading, up to the next one.
+            awk -v version="## [${{ steps.what.outputs.version }}]" '
+              index($0, version) == 1 { on = 1; next }
+              on && /^## \[/ { exit }
+              on { print }
+            ' CHANGELOG.md > notes.md
+          else
+            {
+              echo "A build of \`staging\`, ahead of the next release."
+              echo
+              echo "Install it with **Extensions: Install from VSIX**. What is in it:"
+              echo
+              sed -e 's/^  //' -e '/^#/d' devlog.txt
+            } > notes.md
+          fi
+          cat notes.md
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          FLAGS=()
+          [[ "${{ steps.what.outputs.prerelease }}" == "true" ]] && FLAGS+=(--prerelease)
+          if gh release view "${{ steps.what.outputs.tag }}" >/dev/null 2>&1; then
+            echo "::error::a release for ${{ steps.what.outputs.tag }} already exists"
+            exit 1
+          fi
+          gh release create "${{ steps.what.outputs.tag }}" \
+            chromaleon-${{ steps.what.outputs.version }}.vsix \
+            --title "Chromaleon ${{ steps.what.outputs.version }}" \
+            --notes-file notes.md \
+            --target "${GITHUB_SHA}" \
+            "${FLAGS[@]}"
