@@ -107,4 +107,48 @@ module.exports = async function coexistence() {
       JSON.stringify(synced),
     )
   }
+
+  {
+    // Writing a value identical to the stored one is still an edit to settings.json. With that
+    // file open in an editor the edit lands on the document, so it went dirty on every change
+    // and VS Code surfaced it. Applying twice over unchanged settings must write nothing.
+    const written = []
+    const chromaleon = { accentedStatusBar: true }
+    const settings = { 'workbench.colorTheme': 'Chromaleon Woad', 'workbench.iconTheme': 'vs-seti' }
+
+    const stub = baseStub()
+    stub.workspace.getConfiguration = (section) =>
+      section === 'chromaleon'
+        ? {
+            get: (key, fallback) => (key in chromaleon ? chromaleon[key] : fallback),
+            inspect: (key) => ({ key, globalValue: chromaleon[key] }),
+            update: async (key, value) => void (chromaleon[key] = value),
+          }
+        : {
+            get: (key, fallback) => (key in settings ? settings[key] : fallback),
+            inspect: (key) => ({ key, globalValue: settings[key] }),
+            update: async (key, value) => {
+              written.push(key)
+              settings[key] = value
+            },
+          }
+    stub.commands = { registerCommand: () => ({ dispose() {} }), executeCommand: async () => {} }
+
+    const context = () => ({
+      extensionPath: ROOT,
+      extensionUri: { fsPath: ROOT },
+      extension: { packageJSON: { version: '0.0.0-test' } },
+      subscriptions: [],
+      globalState: {
+        get: (key, fallback) => fallback,
+        update: async () => {},
+        setKeysForSync: () => {},
+      },
+    })
+
+    await activateWith(stub, context())
+    written.length = 0
+    await activateWith(stub, context())
+    check('applying unchanged settings writes nothing', written, [])
+  }
 }

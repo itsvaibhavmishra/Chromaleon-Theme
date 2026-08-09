@@ -3,6 +3,7 @@ import * as vscode from 'vscode'
 import { THEME_DEFAULT } from '@/core/accents'
 import { NS } from '@/config/extension'
 import { RUNTIME } from '@/generated'
+import { sameValue } from '@/utils/same-value'
 
 export type SelectionStyle = 'room' | 'accent'
 export type CursorStyle = 'theme' | 'accent'
@@ -176,11 +177,8 @@ export async function writeGlobalObject(
   section: string,
   value: Record<string, unknown>,
 ): Promise<void> {
-  await vscode.workspace
-    .getConfiguration()
-    .update(
-      section,
-      Object.keys(value).length > 0 ? value : undefined,
-      vscode.ConfigurationTarget.Global,
-    )
+  const next = Object.keys(value).length > 0 ? value : undefined
+  // An identical write is still an edit, so an open settings.json went dirty on every change.
+  if (sameValue(readGlobalObject(section), next ?? {})) return
+  await vscode.workspace.getConfiguration().update(section, next, vscode.ConfigurationTarget.Global)
 }
