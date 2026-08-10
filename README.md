@@ -9,7 +9,7 @@
 
 <br/>
 
-**The last colour theme you need.**
+**The last colour theme you will ever need.**
 
 Chromaleon ships 22 themes, dark and light, with a high contrast variant of each and a
 matching file icon theme. That is where you start, not where you stop.
