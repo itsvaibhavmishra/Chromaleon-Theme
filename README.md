@@ -191,6 +191,9 @@ hand-written `colorCustomizations` survive.
 | **Chromaleon: Open Settings**       | Jump to Chromaleon's settings                     |
 | **Chromaleon: Reset All Settings**  | Put every setting back to its default             |
 
+**Open Customizer** and **Open Settings** are also on Chromaleon's own row in the Extensions view,
+under the gear menu, so you never have to remember a command name.
+
 ## Development
 
 Themes are generated rather than hand-written, and the build audits every contrast floor before it
