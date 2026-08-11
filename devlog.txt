@@ -17,12 +17,15 @@
     - The `skip release` label on a PR merges into staging without publishing a beta, and the commit marker still works for a push that had no PR.
 
   - Improvements:
+    - The readme leads with the customizer and walks a first run through picking a theme, changing a colour and saving it, with a screenshot at every step.
+    - The variant table lists Chalk, which it had been missing while the text below it referred to Chalk's neutrals.
 
   - Fixed:
     - A beta build no longer fails its own verification for having a version the changelog has never heard of.
     - The manifest no longer marks itself private, which would have refused to publish.
 
   - Developers:
+    - Build, architecture and variant instructions moved to `docs/development.md`, so the readme is only what someone installing the extension needs.
 
   - Internal:
     - `npm run release <x.y.z>` moves the devlog into the changelog and bumps the version, so the two cannot disagree.
