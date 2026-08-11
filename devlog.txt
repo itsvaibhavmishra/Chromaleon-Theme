@@ -15,6 +15,7 @@
     - Every push to staging publishes a pre-release build, so there is always an installable copy of what is coming.
     - A release can be started by hand against any tag, which is the only way to publish one tagged before this existed.
     - The `skip release` label on a PR merges into staging without publishing a beta, and the commit marker still works for a push that had no PR.
+    - Open Customizer and Open Settings sit on Chromaleon's own row in the Extensions view, so the panel is reachable without knowing the command palette.
 
   - Improvements:
     - The readme leads with the customizer and walks a first run through picking a theme, changing a colour and saving it, with a screenshot at every step.
