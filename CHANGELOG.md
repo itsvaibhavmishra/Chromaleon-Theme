@@ -7,6 +7,36 @@ All notable changes to this extension are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-08-12
+
+### New
+
+- Tagging main publishes a GitHub release with the vsix attached and the changelog as its notes.
+- Every push to staging publishes a pre-release build, so there is always an installable copy of what is coming.
+- A release can be started by hand against any tag, which is the only way to publish one tagged before this existed.
+- The `skip release` label on a PR merges into staging without publishing a beta, and the commit marker still works for a push that had no PR.
+- Open Customizer and Open Settings sit on Chromaleon's own row in the Extensions view, so the panel is reachable without knowing the command palette.
+
+### Improvements
+
+- The readme leads with the customizer and walks a first run through picking a theme, changing a colour and saving it, with a screenshot at every step.
+- The variant table lists Chalk, which it had been missing while the text below it referred to Chalk's neutrals.
+
+### Fixed
+
+- A beta build no longer fails its own verification for having a version the changelog has never heard of.
+- The manifest no longer marks itself private, which would have refused to publish.
+
+### Developers
+
+- Build, architecture and variant instructions moved to `docs/development.md`, so the readme is only what someone installing the extension needs.
+
+### Internal
+
+- `npm run release <x.y.z>` moves the devlog into the changelog and bumps the version, so the two cannot disagree.
+- The README version badge reads the latest release rather than being edited by hand.
+- `npm run release` no longer breaks its own changelog. It parted the reference links with a blank line, which fails the format check, so every release after the first would have.
+
 ## [0.1.0] - 2026-08-09
 
 ### New
@@ -36,3 +66,4 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The README no longer ends on a profile view counter. The marketplace refuses an extension whose readme loads images from a domain outside its allowlist, so the badge made this unpublishable.
 
 [0.1.0]: https://github.com/itsvaibhavmishra/Chromaleon-Theme/releases/tag/v0.1.0
+[0.1.1]: https://github.com/itsvaibhavmishra/Chromaleon-Theme/releases/tag/v0.1.1
