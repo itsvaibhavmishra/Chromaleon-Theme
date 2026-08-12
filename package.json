@@ -82,7 +82,8 @@
     "lint": "eslint .",
     "check:package": "tsx src/scripts/package-contents.ts",
     "check:history": "tsx src/scripts/check-history.ts",
-    "release": "tsx src/scripts/release.ts"
+    "release": "tsx src/scripts/release.ts",
+    "skip-release": "tsx src/scripts/skip-release.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

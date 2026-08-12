@@ -1,16 +1,16 @@
-# Releases are cut by tagging main, never by a merge. A merge is somebody finishing a thought;
-# a release is a decision, and the two should not be the same gesture.
+# Merging staging into main is the release. The version bump is the human decision, made in
+# that pull request and guarded by release-ready.yml; everything after it happens here.
 #
-# A push to staging publishes a pre-release instead, so there is always an installable build of
-# what is coming without touching main or spending a version number on it.
+# staging publishes nothing. It is where finished work waits, and `npm run package` gives you
+# an installable build in seconds if you want to try something before it ships.
 name: release
 
 on:
   push:
+    branches: [main]
+    # A tag pushed by hand still releases, which is the way to retry or to ship from a commit
+    # that never went through a pull request.
     tags: ['v*']
-    branches: [staging]
-  # A tag pushed before this workflow existed can never trigger it, so publishing has to be
-  # startable by hand as well. Also the way to retry a release that failed halfway.
   workflow_dispatch:
     inputs:
       ref:
@@ -25,17 +25,13 @@ concurrency:
 
 permissions:
   contents: write
-  # Only to read back the labels on the PR a commit came from.
+  # Only to read back the labels on the pull request a commit came from.
   pull-requests: read
 
 jobs:
-  # Merging into staging publishes a beta by default, because a testing branch nobody can
-  # install is not much of a testing branch. Opting out is a decision made on the PR, so the
-  # `skip release` label is the way to say it and it is visible before the merge rather than
-  # while typing one. The commit marker still works, for a push that never had a PR.
-  #
-  # main is absent from the triggers on purpose, so merging a release PR publishes nothing.
-  # Tagging does, and that stays a separate deliberate act.
+  # A merge into main publishes by default, because that is what merging a release pull request
+  # means. Opting out is a decision made on the pull request, so the `skip release` label is the
+  # way to say it and it is visible before the merge rather than typed during one.
   decide:
     runs-on: ubuntu-latest
     outputs:
@@ -59,8 +55,8 @@ jobs:
             exit 0
           fi
 
-          # Fails open on purpose: a direct push has no PR, and an API that is having a bad
-          # day should cost a build nobody wanted rather than lose one somebody did.
+          # Fails open on purpose: a direct push has no pull request, and an API that is having
+          # a bad day should cost a build nobody wanted rather than lose one somebody did.
           LABELS=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" \
             --jq '[.[].labels[].name] | join(",")' 2>/dev/null || echo '')
           echo "labels on the pull request for this commit: ${LABELS:-none}"
@@ -89,14 +85,9 @@ jobs:
 
       - run: npm ci
 
-      # Building is required either way, since themes/, icons/ and dist/ are all gitignored.
-      # A tag runs the whole gate: nothing else has checked that exact commit. A staging push
-      # was already checked by check.yml on the same sha, so it only needs the build.
+      # Nothing else has checked this exact commit, and it is the one people will install.
+      # themes/, icons/ and dist/ are gitignored, so this is also what produces them.
       - run: npm run check
-        if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/')
-
-      - run: npm run build
-        if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')
 
       - name: Work out what is being released
         id: what
@@ -105,6 +96,7 @@ jobs:
           MANIFEST=$(node -p "require('./package.json').version")
           RELEASING="${GITHUB_REF}"
           [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]] && RELEASING="refs/tags/v${MANIFEST}"
+
           if [[ "${RELEASING}" == refs/tags/* ]]; then
             TAG="${RELEASING#refs/tags/}"
             # The tag and the manifest disagreeing means one of them is a mistake, and
@@ -113,23 +105,33 @@ jobs:
               echo "::error::tag ${TAG} does not match package.json ${MANIFEST}"
               exit 1
             fi
-            echo "version=${MANIFEST}" >> "$GITHUB_OUTPUT"
-            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
           else
-            VERSION="${MANIFEST}-beta.${GITHUB_RUN_NUMBER}"
-            npm version "${VERSION}" --no-git-tag-version --allow-same-version
-            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-            echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            # A merge into main. The manifest is the version, and the tag follows from it.
+            TAG="v${MANIFEST}"
           fi
 
+          echo "version=${MANIFEST}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+          # A re-run, or a merge that was never meant to be a release, is not a failure: the
+          # release it would have made already exists.
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "::notice::${TAG} has already been released, nothing to do"
+            echo "done=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "done=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Package
+        if: steps.what.outputs.done == 'false'
         shell: bash
         run: npx vsce package --no-dependencies --out chromaleon-${{ steps.what.outputs.version }}.vsix
 
       # Packaging silently dropping a file is the failure this catches, and it has happened.
       - name: Verify the packaged extension
+        if: steps.what.outputs.done == 'false'
         shell: bash
         run: |
           mkdir -p .verify
@@ -137,41 +139,47 @@ jobs:
           node test/settings.cjs .verify/extension
 
       - name: Take the notes from the changelog
-        id: notes
+        if: steps.what.outputs.done == 'false'
         shell: bash
         run: |
-          if [[ "${{ steps.what.outputs.prerelease }}" == "false" ]]; then
-            # Everything under this version's heading, up to the next one.
-            awk -v version="## [${{ steps.what.outputs.version }}]" '
-              index($0, version) == 1 { on = 1; next }
-              on && /^## \[/ { exit }
-              on { print }
-            ' CHANGELOG.md > notes.md
-          else
-            {
-              echo "A build of \`staging\`, ahead of the next release."
-              echo
-              echo "Install it with **Extensions: Install from VSIX**. What is in it:"
-              echo
-              sed -e 's/^  //' -e '/^#/d' devlog.txt
-            } > notes.md
-          fi
+          # Everything under this version's heading, up to the next one.
+          awk -v version="## [${{ steps.what.outputs.version }}]" '
+            index($0, version) == 1 { on = 1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
           cat notes.md
 
+      # Creates the tag at this commit when one does not exist, which is what a merge into main
+      # relies on. A tag pushed by GITHUB_TOKEN does not trigger workflows, so this cannot
+      # re-enter the job through the tag trigger.
       - name: Publish the release
+        if: steps.what.outputs.done == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          FLAGS=()
-          [[ "${{ steps.what.outputs.prerelease }}" == "true" ]] && FLAGS+=(--prerelease)
-          if gh release view "${{ steps.what.outputs.tag }}" >/dev/null 2>&1; then
-            echo "::error::a release for ${{ steps.what.outputs.tag }} already exists"
-            exit 1
-          fi
           gh release create "${{ steps.what.outputs.tag }}" \
             chromaleon-${{ steps.what.outputs.version }}.vsix \
             --title "Chromaleon ${{ steps.what.outputs.version }}" \
             --notes-file notes.md \
-            --target "${GITHUB_SHA}" \
-            "${FLAGS[@]}"
+            --target "${GITHUB_SHA}"
+
+      # Last, because it is the only step here that cannot be taken back. A version the
+      # marketplace has accepted can never be replaced, only superseded by the next one, so
+      # everything that is allowed to fail fails before this runs.
+      #
+      # Inert until VSCE_PAT exists. Publishing by hand through the Update path on the listing
+      # is the current route, and this starts working the day the secret is added.
+      - name: Publish to the marketplace
+        if: steps.what.outputs.done == 'false'
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        shell: bash
+        run: |
+          if [[ -z "${VSCE_PAT}" ]]; then
+            echo "::notice::VSCE_PAT is not set, so ${{ steps.what.outputs.tag }} was published to GitHub only"
+            exit 0
+          fi
+          # The same bytes the release carries, rather than a fresh package of the same commit.
+          npx vsce publish --packagePath chromaleon-${{ steps.what.outputs.version }}.vsix
