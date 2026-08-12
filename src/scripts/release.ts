@@ -72,10 +72,10 @@ const withEntry =
   changelog.slice(0, firstRelease) + entry + changelog.slice(firstRelease).replace(/\n*$/, '\n')
 
 const repo = 'https://github.com/itsvaibhavmishra/Chromaleon-Theme'
-writeFileSync(
-  changelogPath,
-  `${withEntry.trimEnd()}\n\n[${version}]: ${repo}/releases/tag/v${version}\n`,
-)
+const body = withEntry.trimEnd()
+// The reference links are one block, so a second one joins it rather than opening a paragraph.
+const separator = /\n\[[^\]]+\]: \S+$/.test(body) ? '\n' : '\n\n'
+writeFileSync(changelogPath, `${body}${separator}[${version}]: ${repo}/releases/tag/v${version}\n`)
 
 const manifest = readFileSync(manifestPath, 'utf8')
 writeFileSync(manifestPath, manifest.replace(/"version": "[^"]+"/, `"version": "${version}"`))

@@ -31,3 +31,4 @@
   - Internal:
     - `npm run release <x.y.z>` moves the devlog into the changelog and bumps the version, so the two cannot disagree.
     - The README version badge reads the latest release rather than being edited by hand.
+    - `npm run release` no longer breaks its own changelog. It parted the reference links with a blank line, which fails the format check, so every release after the first would have.
