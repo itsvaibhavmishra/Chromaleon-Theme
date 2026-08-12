@@ -333,6 +333,20 @@
         "category": "Chromaleon"
       }
     ],
+    "menus": {
+      "extension/context": [
+        {
+          "command": "chromaleon.openCustomizer",
+          "when": "extension == 'itsvaibhavmishra.chromaleon-theme' && extensionStatus == installed",
+          "group": "chromaleon@1"
+        },
+        {
+          "command": "chromaleon.openSettings",
+          "when": "extension == 'itsvaibhavmishra.chromaleon-theme' && extensionStatus == installed",
+          "group": "chromaleon@2"
+        }
+      ]
+    },
     "walkthroughs": [
       {
         "id": "chromaleon.getStarted",

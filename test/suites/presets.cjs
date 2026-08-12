@@ -103,6 +103,28 @@ module.exports = async function presets() {
       declared.every((command) => result.commands.includes(command)),
       declared.filter((command) => !result.commands.includes(command)).join(', '),
     )
+
+    // The row menu in the extensions view is reached by naming our own published id in a when
+    // clause, so a rename would silently hang our commands off somebody else's extension.
+    const identity = `${manifest.publisher}.${manifest.name}`
+    const rowMenu = manifest.contributes.menus?.['extension/context'] ?? []
+    checkThat('the extension row contributes a menu', rowMenu.length > 0, String(rowMenu.length))
+    checkThat(
+      'every row menu item runs a declared command',
+      rowMenu.every((entry) => declared.includes(entry.command)),
+      rowMenu
+        .filter((entry) => !declared.includes(entry.command))
+        .map((entry) => entry.command)
+        .join(', '),
+    )
+    checkThat(
+      'every row menu item is scoped to our own extension id',
+      rowMenu.every((entry) => entry.when?.includes(`'${identity}'`)),
+      rowMenu
+        .filter((entry) => !entry.when?.includes(`'${identity}'`))
+        .map((entry) => entry.command)
+        .join(', '),
+    )
   }
   {
     // The panel is served entirely from dist/, which is what localResourceRoots allows.
