@@ -58,8 +58,9 @@ jobs:
           fi
 
           # npm run release empties it. Entries still sitting here mean the changelog is missing
-          # something that is about to ship.
-          if grep -qE '^\s+- \S' devlog.txt; then
+          # something that is about to ship. Entries are indented four spaces and the headings
+          # they sit under are indented two, so anchoring on the depth is what tells them apart.
+          if grep -qE '^ {4,}- \S' devlog.txt; then
             echo "::error::devlog.txt still has entries, so they are not in the changelog."
             FAILED=1
           fi

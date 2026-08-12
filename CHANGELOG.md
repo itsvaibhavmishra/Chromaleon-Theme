@@ -30,6 +30,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `npm run release <x.y.z>` now cuts the branch, runs check, commits, pushes and opens both pull requests, so a release is one command and a failing check never becomes a branch anybody has to look at.
 - `npm run release` retries the commit three times, thirty seconds apart, when signing fails. The key asks for a touch and the prompt arrives after a long check, so it was easy to miss and lose the run to a rollback.
 - A release is dated where it is cut rather than in UTC. Cutting one in the first hours of the day was stamping it with yesterday.
+- The release-ready check no longer reads an empty devlog as a full one. It matched the headings as well as the entries, so it would have blocked every release.
 
 ## [0.1.1] - 2026-08-12
 
