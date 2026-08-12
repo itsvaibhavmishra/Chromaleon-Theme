@@ -11,23 +11,11 @@
 #   Internal     refactors and housekeeping nobody outside would notice
 
   - New:
-    - Tagging main publishes a GitHub release with the vsix attached and the changelog as its notes.
-    - Every push to staging publishes a pre-release build, so there is always an installable copy of what is coming.
-    - A release can be started by hand against any tag, which is the only way to publish one tagged before this existed.
-    - The `skip release` label on a PR merges into staging without publishing a beta, and the commit marker still works for a push that had no PR.
-    - Open Customizer and Open Settings sit on Chromaleon's own row in the Extensions view, so the panel is reachable without knowing the command palette.
 
   - Improvements:
-    - The readme leads with the customizer and walks a first run through picking a theme, changing a colour and saving it, with a screenshot at every step.
-    - The variant table lists Chalk, which it had been missing while the text below it referred to Chalk's neutrals.
 
   - Fixed:
-    - A beta build no longer fails its own verification for having a version the changelog has never heard of.
-    - The manifest no longer marks itself private, which would have refused to publish.
 
   - Developers:
-    - Build, architecture and variant instructions moved to `docs/development.md`, so the readme is only what someone installing the extension needs.
 
   - Internal:
-    - `npm run release <x.y.z>` moves the devlog into the changelog and bumps the version, so the two cannot disagree.
-    - The README version badge reads the latest release rather than being edited by hand.
