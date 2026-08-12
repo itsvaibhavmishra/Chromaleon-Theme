@@ -23,6 +23,29 @@ export function fail(message: string): never {
   process.exit(1)
 }
 
+/** Blocks the whole script, which is the point: nothing else should happen while it waits. */
+function pause(seconds: number): void {
+  execFileSync('sleep', [String(seconds)], { stdio: 'ignore' })
+}
+
+// Commit signing goes through a key that asks for a touch, and a prompt is easy to miss while
+// the check that precedes it runs. Missing one should cost a wait, not the whole release.
+export function commitSigned(message: string, attempts = 3, waitSeconds = 30): void {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      git('commit', '-m', message)
+      return
+    } catch (error) {
+      if (attempt >= attempts) throw error
+      console.log(
+        `\nsigning failed on attempt ${attempt} of ${attempts}. ` +
+          `Retrying in ${waitSeconds}s, approve the prompt when it appears.`,
+      )
+      pause(waitSeconds)
+    }
+  }
+}
+
 /** The open pull request from one branch into another, if there is one. */
 export function openPullRequest(base: string, head: string): number | undefined {
   const found = capture('gh', ['pr', 'list', '--base', base, '--head', head, '--json', 'number'])

@@ -107,6 +107,12 @@ release that cannot build never becomes a branch anybody has to look at.
 Merge the prepare pull request, then the release one. The second stays red until the first
 lands, because until then `staging` is still on the old version.
 
+The release pull request will also read **behind** the first time you look at it. Merging into
+`main` leaves a merge commit there that `staging` does not have, so the two agree on content
+while differing by that commit, and `main` requires branches to be up to date. **Update
+branch** on the pull request merges `main` back into `staging` and clears it. One click, once
+per release.
+
 **What merging into `main` does.** `release.yml` takes the version from `package.json`, tags
 `vx.y.z` at that commit, runs the full `check`, builds and verifies the vsix, and creates the
 GitHub release with the changelog section as its notes. A tag pushed by `GITHUB_TOKEN` does not

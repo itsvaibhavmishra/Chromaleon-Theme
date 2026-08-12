@@ -11,7 +11,7 @@ import {
   withRelease,
 } from '@/scripts/changelog'
 import { ROOT } from '@/scripts/fingerprint'
-import { fail, git, loud, upsertPullRequest } from '@/scripts/shell'
+import { commitSigned, fail, git, loud, upsertPullRequest } from '@/scripts/shell'
 
 // Cuts a release in one command: branch, changelog, version, gate, push, both pull requests.
 // Doing it by hand meant several files that had to agree, and nothing checking that they did.
@@ -64,9 +64,9 @@ try {
   const sections = readDevlog(devlog)
   if (sections.length === 0) fail('devlog.txt is empty, so there is nothing to release.')
 
-  // Today rather than a flag: a release is dated when it is cut, and a wrong date here is the
-  // kind of thing nobody notices until they are reading the changelog a year later.
-  const today = new Date().toISOString().slice(0, 10)
+  // The local date, not UTC. A release cut just after midnight was being dated yesterday,
+  // which is the kind of thing nobody notices until they read the changelog a year later.
+  const today = new Date().toLocaleDateString('en-CA')
   const entry = buildEntry(version, today, sections)
 
   const changelog = readFileSync(changelogPath, 'utf8')
@@ -85,7 +85,7 @@ try {
   loud('npm', ['run', 'check'])
 
   git('add', 'CHANGELOG.md', 'package.json', 'devlog.txt')
-  git('commit', '-m', `chore: 🧹 release ${version}`)
+  commitSigned(`chore: 🧹 release ${version}`)
   git('push', '--set-upstream', 'origin', branch)
 } catch (error) {
   // Put the branch back the way it was found, so a failed run leaves nothing behind.
