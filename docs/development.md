@@ -51,9 +51,12 @@ build must produce, so a fresh clone is verifiably identical rather than merely 
 npm install
 npm run build              # required after cloning, nothing is generated yet
 npm run check              # build + audits + typecheck + lint + format + tests
+npm run check:history      # the same, per commit, over a range
 npm test                   # behavioural tests only
 npm run package            # produce a .vsix
 npm run lock               # re-record the fingerprint (intended visual changes only)
+npm run release            # cut a release, see below
+npm run skip-release       # merge staging into main without cutting one
 ```
 
 `npm run check` fails on:
@@ -70,6 +73,74 @@ each setting actually does. Pass an extension directory to test an installed cop
 ```bash
 node test/settings.cjs ~/.vscode/extensions/<id>
 ```
+
+## 🚢 Branches and releasing
+
+`main` is what has been released. `staging` is what is going to be. Both are protected: no
+direct pushes, a pull request is required, `check` must pass, and the branch must be up to date
+before merging.
+
+```
+feature branch ──PR──▶ staging ──PR──▶ main ──▶ tag · build · check · GitHub release
+   cut from staging      publishes        merging this
+   devlog line           nothing          is the release
+```
+
+**Everyday work.** Cut from `staging`, never from `main`. Add one line to `devlog.txt` under the
+heading that matches who the change is for. Open a pull request into `staging`, titled in plain
+words: what the branch did, no `feat:` prefix and no issue number, because those belong on
+commits. Merging publishes nothing, so `staging` is simply where finished work waits.
+
+**Cutting a release.** One command:
+
+```bash
+npm run release 0.1.2      # that version
+npm run release            # asks, offering the next patch
+```
+
+It refuses a dirty tree, cuts `release/0.1.2` from `origin/staging`, moves `devlog.txt` into a
+dated `CHANGELOG.md` section, bumps `package.json`, empties the devlog, runs `check`, commits,
+pushes, and opens **both** pull requests: the prepare one into `staging`, and the release one
+from `staging` into `main`. If `check` fails it deletes the branch and pushes nothing, so a
+release that cannot build never becomes a branch anybody has to look at.
+
+Merge the prepare pull request, then the release one. The second stays red until the first
+lands, because until then `staging` is still on the old version.
+
+The release pull request will also read **behind** the first time you look at it. Merging into
+`main` leaves a merge commit there that `staging` does not have, so the two agree on content
+while differing by that commit, and `main` requires branches to be up to date. **Update
+branch** on the pull request merges `main` back into `staging` and clears it. One click, once
+per release.
+
+**What merging into `main` does.** `release.yml` takes the version from `package.json`, tags
+`vx.y.z` at that commit, runs the full `check`, builds and verifies the vsix, and creates the
+GitHub release with the changelog section as its notes. A tag pushed by `GITHUB_TOKEN` does not
+trigger workflows, so it cannot re-enter itself through the tag trigger. Pushing a tag by hand
+still works, which is the way to retry.
+
+**What stops it.** `release-ready.yml` runs on every pull request into `main` and fails unless
+the version went up, `CHANGELOG.md` has a dated section for it, `devlog.txt` is empty, and the
+tag is free. It is skipped entirely when the pull request carries **`skip release`**, since
+none of those questions apply to a merge that is not a release.
+
+**Merging without releasing.**
+
+```bash
+npm run skip-release
+```
+
+Opens a `staging` into `main` pull request already labelled. Anything still in `devlog.txt`
+stays there and lands in whichever version is cut next, because only `npm run release` ever
+empties it. The pull request body says how many entries are waiting, so that is visible rather
+than assumed.
+
+**The marketplace** is still updated by hand, through the **Update** path on the existing
+listing rather than _+ New extension_: the create path applies a stricter scan. The workflow
+already carries the publish step, skipping with a notice until a `VSCE_PAT` secret exists.
+
+A version is published once. The marketplace will not take the same version twice, so a mistake
+means burning a number rather than replacing it.
 
 ## 🎯 Adding a variant
 

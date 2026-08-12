@@ -4,8 +4,7 @@
 
 <br/>
 
-> [!IMPORTANT]
-> Please leave a ⭐ if you like this project
+> **Please leave a ⭐ if you like this project**
 
 <br/>
 
@@ -21,7 +20,7 @@ Nudge a shipped theme until it feels like yours, or build something nobody has s
 One extension, and as many themes as you care to make.
 
 ![Version](https://img.shields.io/github/v/release/itsvaibhavmishra/Chromaleon-Theme?color=2578B3&label=version)
-![Installs](https://img.shields.io/visual-studio-marketplace/i/itsvaibhavmishra.chromaleon-theme?color=8B5CF6&label=installs)
+![Themes](https://img.shields.io/badge/themes-unlimited-8B5CF6)
 ![Icons](https://img.shields.io/badge/icons-1250-4FA6FF)
 ![License](https://img.shields.io/badge/license-MIT-34D399)
 
