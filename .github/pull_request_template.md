@@ -10,16 +10,21 @@
 
 <!-- Required for a PR into staging. Add your line to devlog.txt under the heading that
      matches who the change is for, and tick the box below.
-     Not required for staging into main: that PR moves the whole devlog into CHANGELOG.md. -->
+     Not required for staging into main: npm run release has already moved the whole devlog
+     into CHANGELOG.md by then. -->
 
-- [ ] `devlog.txt` updated, or this is a staging into main release PR
+- [ ] `devlog.txt` updated, or this is a staging into main pull request
 
 ### Release
 
-<!-- Merging into staging publishes a beta build. If this change is not worth one, add the
-     `skip release` label. Merging into main never publishes; tagging does. -->
+<!-- Only meaningful on a staging into main pull request, because merging into main is what
+     publishes. staging publishes nothing.
 
-- [ ] Not worth a beta build, so this PR carries the `skip release` label
+     A release is prepared by `npm run release <x.y.z>`, which opens both pull requests.
+     `npm run skip-release` opens a staging into main pull request already labelled, for a
+     merge that is deliberately not a release. -->
+
+- [ ] Not a release, so this pull request carries the `skip release` label
 
 ### Checklist
 
