@@ -7,7 +7,7 @@ All notable changes to this extension are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.2] - 2026-08-12
+## [0.1.2] - 2026-08-13
 
 ### New
 
@@ -28,6 +28,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A required release-ready check blocks a staging into main merge unless the version went up, the changelog has a dated section for it, the devlog is empty and the tag is free.
 - `npm run skip-release` opens a staging into main pull request already labelled, for moving work to main without cutting a version.
 - `npm run release <x.y.z>` now cuts the branch, runs check, commits, pushes and opens both pull requests, so a release is one command and a failing check never becomes a branch anybody has to look at.
+- `npm run release` retries the commit three times, thirty seconds apart, when signing fails. The key asks for a touch and the prompt arrives after a long check, so it was easy to miss and lose the run to a rollback.
+- A release is dated where it is cut rather than in UTC. Cutting one in the first hours of the day was stamping it with yesterday.
 
 ## [0.1.1] - 2026-08-12
 
