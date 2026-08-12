@@ -7,6 +7,28 @@ All notable changes to this extension are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-08-12
+
+### New
+
+- Merging staging into main is the release. It tags, builds, runs the full check against that commit and publishes the GitHub release, so there is no tag to push by hand.
+
+### Fixed
+
+- The readme no longer opens on a literal `[!IMPORTANT]`. GitHub renders that as an alert and the marketplace does not, so the listing showed the markup instead of the message.
+- The readme no longer shows a broken installs badge. Shields retired its marketplace endpoints and the replacement vsmarketplacebadges.dev returns 500 for every extension, so there is no working provider to point at.
+
+### Developers
+
+- `docs/development.md` covers branches and releasing, which it never did: what each branch publishes, what `npm run release` and `npm run skip-release` do, and what blocks a release that is not ready.
+
+### Internal
+
+- staging no longer publishes a beta on every merge. Merging into main is the only thing that publishes, and `skip release` now means one thing rather than two.
+- A required release-ready check blocks a staging into main merge unless the version went up, the changelog has a dated section for it, the devlog is empty and the tag is free.
+- `npm run skip-release` opens a staging into main pull request already labelled, for moving work to main without cutting a version.
+- `npm run release <x.y.z>` now cuts the branch, runs check, commits, pushes and opens both pull requests, so a release is one command and a failing check never becomes a branch anybody has to look at.
+
 ## [0.1.1] - 2026-08-12
 
 ### New
@@ -67,3 +89,4 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [0.1.0]: https://github.com/itsvaibhavmishra/Chromaleon-Theme/releases/tag/v0.1.0
 [0.1.1]: https://github.com/itsvaibhavmishra/Chromaleon-Theme/releases/tag/v0.1.1
+[0.1.2]: https://github.com/itsvaibhavmishra/Chromaleon-Theme/releases/tag/v0.1.2
