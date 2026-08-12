@@ -4,8 +4,7 @@
 
 <br/>
 
-> [!IMPORTANT]
-> Please leave a ⭐ if you like this project
+> **Please leave a ⭐ if you like this project**
 
 <br/>
 
