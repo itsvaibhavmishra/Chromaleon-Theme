@@ -13,6 +13,7 @@
   - New:
 
   - Improvements:
+    - A new banner, leading with what you can make rather than how many themes ship.
 
   - Fixed:
 
