@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/banner.png" alt="Chromaleon - Shift your colours" width="100%" />
+  <img src="docs/assets/banner.webp" alt="Chromaleon - Shift your colours" width="100%" />
 </div>
 
 <br/>
