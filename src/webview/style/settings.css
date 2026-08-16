@@ -247,3 +247,27 @@
   font-size: 0.9em;
   color: var(--vscode-descriptionForeground);
 }
+
+/* Dimmed rather than removed: the setting still applies in the other workbench. */
+.setting-off .segmented,
+.setting-off select,
+.setting-off .setting-text,
+.setting-off .switch {
+  opacity: 0.45;
+}
+
+.setting-inert {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 6px;
+  border-radius: 50%;
+  font-size: 0.7em;
+  font-weight: 600;
+  cursor: help;
+  vertical-align: 1px;
+  color: var(--vscode-descriptionForeground);
+  border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.35));
+}

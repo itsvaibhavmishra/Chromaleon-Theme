@@ -139,7 +139,9 @@ module.exports = async function presets() {
       ['.cv-line-outline .cv-line-on', 'box-shadow'],
       ['.cv-line-solid .cv-line-on', 'background'],
       ['.cv-tabbar-contrasted .cv-tabs', 'background'],
-      ['.cv-borders-subtle .cv-side', 'border-color'],
+      // Borders moved to one inherited value; the question the check asks is unchanged.
+      ['.cv-borders-subtle', '--cv-edge'],
+      ['.cv-borders-strong', '--cv-edge'],
       ['.cv-accented-status .cv-status', 'background'],
       ['.cv-italics .cv-em', 'font-style'],
       ['.cv-selection-accent .cv-sel', 'background'],
@@ -172,6 +174,22 @@ module.exports = async function presets() {
         !ruleFor('.cv-tab-on').includes('border-bottom-color'),
       'the active tab hardcodes an edge again, which is the bug that shipped',
     )
+
+    // Redefining --cv-edge moves nothing unless the parts actually read it.
+    for (const [region, property] of [
+      ['.cv-activity', 'border-right'],
+      ['.cv-side', 'border-right'],
+      ['.cv-chat', 'border-left'],
+      ['.cv-terminal', 'border-top'],
+      ['.cv-status', 'border-top'],
+    ]) {
+      const rule = ruleFor(region)
+      checkThat(
+        `${region} takes its ${property} from --cv-edge`,
+        rule.includes(property) && rule.includes('var(--cv-edge)'),
+        'the edge is pinned, so the borders setting cannot move it',
+      )
+    }
 
     for (const asset of ['webview.js', 'webview.css', 'extension.cjs']) {
       checkThat(`dist/${asset} is built`, fs.existsSync(path.join(ROOT, 'dist', asset)), 'missing')

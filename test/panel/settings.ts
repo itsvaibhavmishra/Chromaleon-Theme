@@ -1,6 +1,7 @@
 import { SettingsPane } from '@/components/settings-pane'
 import { SECTIONS } from '@/constants/settings'
 import { humanise, inlineSegments } from '@/utils/inline-markdown'
+import type { SettingMeta } from '@/webview/protocol'
 import { check, checkThat } from '#test/panel/harness'
 
 console.log('\nsetting descriptions')
@@ -92,6 +93,7 @@ console.log('\nthe settings pane actually reports a click')
     ],
     values: { italics: true, borders: 'none' },
     themeAccent: '#2578b3',
+    layout: 'classic',
     onChange: (key, value) => changes.push([key, value]),
   })
 
@@ -108,4 +110,62 @@ console.log('\nthe settings pane actually reports a click')
   checkThat('including the one not chosen', !!strong, 'no Strong button')
   ;(strong?.props?.onClick as () => void)?.()
   check('and picking it reports that value', changes.at(-1), ['borders', 'strong'])
+
+  // Marked and disabled, not removed: the modern workbench hides both tab indicator bars.
+  const indicator: SettingMeta = {
+    key: 'tabIndicator',
+    kind: 'enum',
+    description: 'Where the active tab is marked.',
+    options: [{ value: 'bottom' }, { value: 'top' }, { value: 'none' }],
+  }
+  const marked = (layout: 'classic' | 'modern') =>
+    flatten(
+      SettingsPane({
+        settings: [indicator],
+        values: { tabIndicator: 'bottom' },
+        themeAccent: '#2578b3',
+        layout,
+        onChange: () => {},
+      }),
+    )
+
+  const off = marked('modern')
+  checkThat(
+    'the modern workbench marks tabIndicator inert',
+    off.some((node) => node.props?.class === 'setting setting-off'),
+    'no setting-off row',
+  )
+  checkThat(
+    'and explains why on a hoverable marker',
+    off.some(
+      (node) =>
+        typeof node.props?.title === 'string' && node.props.title.includes('indicator bars'),
+    ),
+    'no titled marker',
+  )
+  checkThat(
+    'the control is still rendered rather than hidden',
+    off.some((node) => node.type === 'button' && node.props?.['aria-pressed'] !== undefined),
+    'options gone',
+  )
+  // Dimming alone leaves the buttons reachable by keyboard, so the attribute is the real gate.
+  checkThat(
+    'and every option is genuinely disabled, not merely dimmed',
+    off
+      .filter((node) => node.type === 'button' && node.props?.['aria-pressed'] !== undefined)
+      .every((node) => node.props?.disabled === true),
+    'an option is still operable',
+  )
+  checkThat(
+    'while the classic workbench leaves them operable',
+    marked('classic')
+      .filter((node) => node.type === 'button' && node.props?.['aria-pressed'] !== undefined)
+      .every((node) => !node.props?.disabled),
+    'disabled on classic',
+  )
+  checkThat(
+    'and the classic workbench leaves it alone',
+    marked('classic').every((node) => node.props?.class !== 'setting setting-off'),
+    'marked inert on classic',
+  )
 }

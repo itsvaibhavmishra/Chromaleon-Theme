@@ -22,7 +22,7 @@ import {
   type ReadResult,
 } from '@/utils/preset-file'
 import { type Compare, derive, shortName } from '@/webview/model'
-import type { PanelState, ToWebview } from '@/webview/protocol'
+import type { Layout, PanelState, ToWebview } from '@/webview/protocol'
 
 // Reading happens here rather than in the pane so the pane stays a view of a decided result.
 async function readDropped(files: File[], bases: string[]): Promise<ReadResult[]> {
@@ -46,6 +46,8 @@ function App() {
   const [query, setQuery] = useState('')
   const [collapsed, setCollapsed] = useState(false)
   const [showTerminal, setShowTerminal] = useState(false)
+  // Null follows the running workbench; set, it holds the other one for a look ahead.
+  const [previewLayout, setPreviewLayout] = useState<Layout | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   // Edits live here until saved, and nothing the panel does reaches the editor on its own.
   // Null means untouched; once set it is the complete override set, not a layer over the
@@ -73,6 +75,10 @@ function App() {
       // before the new state arrives would flash the canvas back to the base.
       if (event.data.type === 'saved') return setEditing(event.data.preset)
       if (event.data.type !== 'state') return
+      // A fresh panel has no store of its own, so the host's copy is the only one there is.
+      if (restored().canvasHeight === undefined) {
+        setCanvasHeight(clampCanvas(event.data.state.canvasHeight))
+      }
       setState(event.data.state)
       persist({ state: event.data.state })
     }
@@ -112,6 +118,7 @@ function App() {
   const commit = (next: number) => {
     setCanvasHeight(next)
     persist({ canvasHeight: next })
+    post({ type: 'setCanvasHeight', height: next })
   }
 
   if (!state) return <p class="muted">Loading</p>
@@ -121,6 +128,8 @@ function App() {
   // never the other way round: switching in the panel must not restyle the editor.
   const view = derive(state, editing, draft, compare)
   const { viewing, base, edits, roles, measured, failing, previewing } = view
+  // Follows the running workbench until the toggle is pressed, so a rollout moves it too.
+  const layout = previewLayout ?? state.layout
   const viewingPreset = view.preset
 
   const setRole = (role: string, value: string | null) => {
@@ -184,8 +193,17 @@ function App() {
           >
             Terminal
           </button>
+          {/* Names the layout on show, so the button and the miniature never disagree. */}
+          <button
+            class={layout === state.layout ? 'reveal-on' : ''}
+            onClick={() => setPreviewLayout(layout === 'modern' ? 'classic' : 'modern')}
+          >
+            {layout === 'modern' ? 'Modern Layout' : 'Classic Layout'}
+            {layout === state.layout && <span class="reveal-tag">active</span>}
+          </button>
           <p class="muted">
-            The rest of the window is always drawn. Only the terminal is worth the room it costs.
+            The rest of the window is always drawn. VS Code is rolling the modern workbench out, so
+            this starts on whichever one you are running.
           </p>
           <button class="collapse" onClick={() => setCollapsed(!collapsed)}>
             {collapsed ? 'Expand' : 'Collapse'}
@@ -198,6 +216,7 @@ function App() {
           palette={view.canvas}
           collapsed={collapsed}
           showTerminal={showTerminal}
+          layout={layout}
           settings={canvasSettings(state.settingValues)}
           icons={state.treeIcons}
           selected={selected}
@@ -288,6 +307,8 @@ function App() {
             settings={state.settings}
             values={state.settingValues}
             themeAccent={view.palette.accent ?? ''}
+            // The running workbench, never the previewed one: it decides what is inert.
+            layout={state.layout}
             onChange={(key, value) => post({ type: 'setSetting', key, value })}
           />
         )}

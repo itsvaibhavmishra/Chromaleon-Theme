@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact'
 
 import { TreeIcon } from '@/components/tree-icon'
+import type { Layout } from '@/webview/protocol'
 import { ACTIVE_FILE, SAMPLE, TREE } from '@/webview/sample'
 
 // A miniature of the parts of a VS Code window an extension can actually paint. Anything
@@ -30,6 +31,8 @@ interface Props {
   palette: Record<string, string>
   collapsed: boolean
   showTerminal: boolean
+  // Not one of our settings: VS Code draws one workbench or the other and this says which.
+  layout: Layout
   settings: CanvasSettings
   icons: Record<string, string>
   selected: string | null
@@ -109,6 +112,7 @@ export function Canvas({
   palette,
   collapsed,
   showTerminal,
+  layout,
   settings,
   icons,
   selected,
@@ -134,6 +138,7 @@ export function Canvas({
   }
 
   const modes = [
+    `cv-layout-${layout}`,
     `cv-line-${settings.currentLine}`,
     `cv-indicator-${settings.tabIndicator}`,
     `cv-tabbar-${settings.tabBar}`,
