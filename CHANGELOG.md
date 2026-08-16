@@ -23,6 +23,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - The miniature draws the panel edges a theme paints, which high contrast ones always had.
 
+### Developers
+
+- Workflows run on actions built for Node 24, ahead of the Node 20 runner deprecation.
+
 ## [0.1.2] - 2026-08-13
 
 ### New
