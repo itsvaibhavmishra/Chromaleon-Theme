@@ -69,6 +69,17 @@
   border-color: var(--vscode-focusBorder);
 }
 
+/* Marks the layout VS Code is drawing, as against the one being previewed. */
+.reveal-tag {
+  display: block;
+  font-size: 0.75em;
+  line-height: 1.2;
+  margin-top: 1px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vscode-descriptionForeground);
+}
+
 .reveal .muted {
   font-size: 0.8em;
   line-height: 1.4;
@@ -142,6 +153,7 @@
 
 .cv-activity {
   background: var(--r-chrome);
+  border-right: 1px solid var(--cv-edge);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -162,7 +174,7 @@
 }
 
 .cv-side {
-  border-right: 1px solid transparent;
+  border-right: 1px solid var(--cv-edge);
   background: var(--r-chrome);
   color: var(--r-fgMuted);
   overflow: hidden;
@@ -261,7 +273,7 @@
 .cv-terminal {
   flex: none;
   background: var(--r-chrome);
-  border-top: 1px solid transparent;
+  border-top: 1px solid var(--cv-edge);
   font-family: var(--vscode-editor-font-family);
   color: var(--r-fg);
 }

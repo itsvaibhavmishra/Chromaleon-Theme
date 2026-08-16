@@ -1,3 +1,13 @@
+import type { Layout } from '@/webview/protocol'
+
+// Settings a workbench renders inert, and why. Only entries proven against its stylesheet.
+export const INERT_IN: Record<string, { layout: Layout; why: string }> = {
+  tabIndicator: {
+    layout: 'modern',
+    why: 'The modern workbench hides both indicator bars and fills the selected tab instead, so this has nothing to change. It still applies if you switch back.',
+  },
+}
+
 // The manifest orders settings but never groups them, and fifteen in one column is a wall.
 export const SECTIONS: { title: string; blurb: string; keys: string[] }[] = [
   {

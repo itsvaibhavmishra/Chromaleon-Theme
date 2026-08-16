@@ -27,6 +27,11 @@ export type ToHost =
   | { type: 'setSetting'; key: string; value: string | boolean }
   | { type: 'importPresets'; presets: PortablePreset[] }
   | { type: 'exportPresets'; presets: PortablePreset[] }
+  // Sent when a drag ends, because the webview's own store dies with the panel.
+  | { type: 'setCanvasHeight'; height: number }
+
+// Which workbench VS Code draws: `modern` is the rounded one, `classic` the flush one.
+export type Layout = 'classic' | 'modern'
 
 export type RoleGroup = 'Surfaces' | 'Foregrounds' | 'Accent' | 'Hue ramp' | 'Fixed'
 
@@ -87,6 +92,10 @@ export interface PanelState {
   palettes: Record<string, Record<string, string>>
   /** The theme VS Code itself is running, or null when it is not one of ours. */
   active: string | null
+  /** The workbench VS Code is drawing. The miniature follows it until asked to show the other. */
+  layout: Layout
+  /** How tall the miniature was left last time, so a reopened panel is where it was left. */
+  canvasHeight: number
   /** The user's accent setting, which replaces the accent role on whichever theme is shown. */
   accentOverride: string | null
   /** Everything the user has made. Shipped themes are read-only origins. */
