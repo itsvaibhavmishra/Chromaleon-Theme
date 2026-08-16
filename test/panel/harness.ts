@@ -77,6 +77,8 @@ export function panel(over: Partial<PanelState> = {}): PanelState {
     ],
     palettes: { 'Chromaleon Obsidian': OBSIDIAN, 'Chromaleon Chalk': CHALK },
     active: 'Chromaleon Obsidian',
+    layout: 'classic',
+    canvasHeight: 300,
     accentOverride: null,
     presets: {},
     activePresets: {},

@@ -1,8 +1,8 @@
 import { AccentField } from '@/components/accent-field'
-import { SECTIONS } from '@/constants/settings'
+import { INERT_IN, SECTIONS } from '@/constants/settings'
 import { humanise, inlineSegments } from '@/utils/inline-markdown'
 import { HEX } from '@/webview/model'
-import type { SettingMeta } from '@/webview/protocol'
+import type { Layout, SettingMeta } from '@/webview/protocol'
 
 type Value = string | boolean
 
@@ -35,10 +35,12 @@ function Description({ text }: { text: string }) {
 function Segmented({
   setting,
   value,
+  disabled,
   onChange,
 }: {
   setting: SettingMeta
   value: string
+  disabled?: boolean
   onChange: (next: string) => void
 }) {
   return (
@@ -48,6 +50,7 @@ function Segmented({
           key={option.value}
           class={option.value === value ? 'on' : undefined}
           aria-pressed={option.value === value}
+          disabled={disabled}
           title={option.detail}
           onClick={() => onChange(option.value)}
         >
@@ -61,10 +64,12 @@ function Segmented({
 function Switch({
   setting,
   value,
+  disabled,
   onChange,
 }: {
   setting: SettingMeta
   value: boolean
+  disabled?: boolean
   onChange: (next: boolean) => void
 }) {
   return (
@@ -72,6 +77,7 @@ function Switch({
       class={value ? 'switch on' : 'switch'}
       role="switch"
       aria-checked={value}
+      disabled={disabled}
       onClick={() => onChange(!value)}
     >
       <span class="switch-track">
@@ -85,14 +91,18 @@ function Switch({
 function Field({
   setting,
   value,
+  disabled,
   onChange,
 }: {
   setting: SettingMeta
   value: Value
+  disabled?: boolean
   onChange: (next: Value) => void
 }) {
   if (setting.kind === 'boolean') {
-    return <Switch setting={setting} value={value === true} onChange={onChange} />
+    return (
+      <Switch setting={setting} value={value === true} disabled={disabled} onChange={onChange} />
+    )
   }
 
   if (setting.kind === 'enum') {
@@ -102,10 +112,16 @@ function Field({
       <>
         <div class="setting-label">{humanise(setting.key)}</div>
         {options.length <= SEGMENTED_MAX ? (
-          <Segmented setting={setting} value={String(value)} onChange={onChange} />
+          <Segmented
+            setting={setting}
+            value={String(value)}
+            disabled={disabled}
+            onChange={onChange}
+          />
         ) : (
           <select
             value={String(value)}
+            disabled={disabled}
             onChange={(event) => onChange((event.target as HTMLSelectElement).value)}
           >
             {options.map((option) => (
@@ -129,6 +145,7 @@ function Field({
         class={valid ? 'setting-text' : 'setting-text invalid'}
         value={text}
         spellcheck={false}
+        disabled={disabled}
         placeholder="#rrggbb"
         onChange={(event) => {
           const next = (event.target as HTMLInputElement).value.trim()
@@ -139,15 +156,26 @@ function Field({
   )
 }
 
+// The description still says what the setting does; this says only why it cannot right now.
+function Inert({ why }: { why: string }) {
+  return (
+    <span class="setting-inert" title={why} aria-label={why}>
+      ?
+    </span>
+  )
+}
+
 export function SettingsPane({
   settings,
   values,
   themeAccent,
+  layout,
   onChange,
 }: {
   settings: SettingMeta[]
   values: Record<string, Value>
   themeAccent: string
+  layout: Layout
   onChange: (key: string, value: Value) => void
 }) {
   const byKey = new Map(settings.map((setting) => [setting.key, setting]))
@@ -207,13 +235,18 @@ export function SettingsPane({
                   )
                 }
 
+                // Left rendered rather than hidden: it still applies in the other workbench.
+                const entry = INERT_IN[setting.key]
+                const inert = entry?.layout === layout
                 return (
-                  <div key={setting.key} class="setting">
+                  <div key={setting.key} class={inert ? 'setting setting-off' : 'setting'}>
                     <Field
                       setting={setting}
                       value={values[setting.key] ?? ''}
+                      disabled={inert}
                       onChange={(next) => onChange(setting.key, next)}
                     />
+                    {inert && <Inert why={entry.why} />}
                     <Description text={setting.description} />
                   </div>
                 )

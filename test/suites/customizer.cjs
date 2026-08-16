@@ -14,7 +14,12 @@ const path = require('node:path')
 module.exports = async function customizer() {
   console.log('\ncustomizer opens where the setting says')
   {
-    const open = async (location, theme = 'Chromaleon Woad') => {
+    const open = async (
+      location,
+      theme = 'Chromaleon Woad',
+      modernUI = undefined,
+      globals = {},
+    ) => {
       const executed = []
       const posted = []
       const written = []
@@ -30,6 +35,7 @@ module.exports = async function customizer() {
           if (key in store) return store[key]
           if (key === 'customizerLocation') return location
           if (key === 'workbench.colorTheme') return theme
+          if (key === 'workbench.experimental.modernUI') return modernUI
           return fallback
         },
         inspect: (key) => ({ key, globalValue: store[key] }),
@@ -71,9 +77,10 @@ module.exports = async function customizer() {
         extensionUri: { fsPath: ROOT },
         extension: { packageJSON: { version: '0.0.0', ...MANIFEST } },
         subscriptions: [],
+        // A real store: a stub that forgets cannot show a height surviving the panel closing.
         globalState: {
-          get: (key, fallback) => fallback,
-          update: async () => {},
+          get: (key, fallback) => (key in globals ? globals[key] : fallback),
+          update: async (key, value) => void (globals[key] = value),
           setKeysForSync: () => {},
         },
       })
@@ -98,7 +105,7 @@ module.exports = async function customizer() {
         await withStub(() => receive(message))
         await settle()
       }
-      return { executed, column, posted, written, activationWrites, send }
+      return { executed, column, posted, written, activationWrites, send, globals }
     }
 
     // There is no ViewColumn for a separate window, so this is the only observable
@@ -139,6 +146,35 @@ module.exports = async function customizer() {
       'high contrast variants are flagged rather than parsed in the panel',
       state.themes.filter((theme) => theme.highContrast).length === 11,
       `${state.themes.filter((theme) => theme.highContrast).length} flagged`,
+    )
+
+    // The flag is experimental, so the unset case matters most: only an explicit true is modern.
+    check('an unset flag reads as the old layout', state.layout, 'classic')
+    const modern = await open('active', 'Chromaleon Tyrian', true)
+    check(
+      'the flag switched on reads as the new one',
+      modern.posted.find((message) => message.type === 'state')?.state.layout,
+      'modern',
+    )
+    const optedOut = await open('active', 'Chromaleon Tyrian', false)
+    check(
+      'and switched off reads as the old one',
+      optedOut.posted.find((message) => message.type === 'state')?.state.layout,
+      'classic',
+    )
+
+    // Webview state dies with the panel, so a height kept only there would reset on reopen.
+    check('a first open offers the default height', state.canvasHeight, 300)
+    const dragged = await open('active', 'Chromaleon Tyrian')
+    await dragged.send({ type: 'setCanvasHeight', height: 420 })
+    check('a committed drag is kept by the host', dragged.globals['chromaleon.canvasHeight'], 420)
+    const reopened = await open('active', 'Chromaleon Tyrian', undefined, {
+      'chromaleon.canvasHeight': 420,
+    })
+    check(
+      'and a panel opened again starts there',
+      reopened.posted.find((message) => message.type === 'state')?.state.canvasHeight,
+      420,
     )
 
     // The whole point of switching themes inside the customizer is that it previews without

@@ -3,8 +3,10 @@ import { randomBytes } from 'node:crypto'
 import * as vscode from 'vscode'
 
 import { NS } from '@/config/extension'
+import { CANVAS_DEFAULT } from '@/constants/panel'
 
 import { resolveAccent } from '@/core/accents'
+import { activeLayout, LAYOUT_SECTION } from '@/extension/layout'
 import { treeIcons } from '@/extension/icon-preview'
 import { type PortablePreset, writePresetFile } from '@/utils/preset-file'
 import { CONCEPTS } from '@/core/roles'
@@ -29,6 +31,9 @@ import {
 } from '@/extension/settings'
 
 const VIEW_TYPE = 'chromaleon.customizer'
+
+// The webview's own store dies with the panel, so this lives in globalState. Not synced.
+const CANVAS_HEIGHT = `${NS}.canvasHeight`
 
 // Where a preset goes is the user's call, so this asks rather than picking a folder for them.
 async function savePresetFile(presets: PortablePreset[]): Promise<void> {
@@ -108,6 +113,8 @@ function panelState(context: vscode.ExtensionContext): PanelState {
     themes,
     palettes: RUNTIME.palettes,
     active: variant?.label ?? null,
+    layout: activeLayout(),
+    canvasHeight: context.globalState.get<number>(CANVAS_HEIGHT) ?? CANVAS_DEFAULT,
     accentOverride: resolveAccent(settings.accent, settings.customAccent) ?? null,
     presets: settings.presets,
     activePresets: settings.activePresets,
@@ -187,13 +194,15 @@ function wire(panel: vscode.WebviewPanel, context: vscode.ExtensionContext): voi
         void savePresetFile(message.presets)
       } else if (message.type === 'deletePreset') {
         void deletePreset(message.preset)
+      } else if (message.type === 'setCanvasHeight') {
+        void context.globalState.update(CANVAS_HEIGHT, message.height)
       }
     }),
     // The panel paints its own chrome from --vscode-* variables, so VS Code restyles that
     // part by itself. This resends the palette the canvas and the role list are drawn from.
     vscode.window.onDidChangeActiveColorTheme(() => push()),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      const watched = [NS, 'workbench.colorTheme', 'workbench.iconTheme']
+      const watched = [NS, 'workbench.colorTheme', 'workbench.iconTheme', LAYOUT_SECTION]
       if (watched.some((section) => event.affectsConfiguration(section))) push()
     }),
   ]

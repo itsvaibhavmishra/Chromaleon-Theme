@@ -6,7 +6,7 @@
    the same way workbench.ts composes them. Naming the role and the percentage separately
    keeps both visible, and the value still tracks the role when it is edited. */
 .cv-chat {
-  border-left: 1px solid transparent;
+  border-left: 1px solid var(--cv-edge);
   --hairline: color-mix(in srgb, var(--r-white) 6%, transparent);
   --icon: color-mix(in srgb, var(--r-fg) 70%, transparent);
   --placeholder: color-mix(in srgb, var(--r-fg) 40%, transparent);
@@ -129,6 +129,7 @@
 
 .cv-status {
   grid-column: 1 / -1;
+  border-top: 1px solid var(--cv-edge);
   display: flex;
   align-items: center;
   gap: 10px;
