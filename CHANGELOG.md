@@ -7,6 +7,22 @@ All notable changes to this extension are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-08-16
+
+### New
+
+- The miniature follows VS Code's new rounded workbench, and can preview either layout.
+- Settings the workbench you are running ignores are disabled, and say why.
+
+### Improvements
+
+- A new banner, leading with what you can make rather than how many themes ship.
+- The customizer remembers how tall you left the miniature.
+
+### Fixed
+
+- The miniature draws the panel edges a theme paints, which high contrast ones always had.
+
 ## [0.1.2] - 2026-08-13
 
 ### New
@@ -93,3 +109,4 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 [0.1.0]: https://github.com/itsvaibhavmishra/Chromaleon-Theme/releases/tag/v0.1.0
 [0.1.1]: https://github.com/itsvaibhavmishra/Chromaleon-Theme/releases/tag/v0.1.1
 [0.1.2]: https://github.com/itsvaibhavmishra/Chromaleon-Theme/releases/tag/v0.1.2
+[0.1.3]: https://github.com/itsvaibhavmishra/Chromaleon-Theme/releases/tag/v0.1.3
